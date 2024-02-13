@@ -23,12 +23,16 @@ import plot_topo
     
 # inputs: 
     # subject number
-    # data_directory?
-        # makes sense to include as default?
+    # does it make sense to include data_directory?
+    # does it also make snese to include epoch_start_time and epoch_end_time?
     
 # returns: 
+    # erp_times
+    # target_erp
+    # non_target_erp
+    # does not make snese to include eeg_epochs?
 
-def load_erp_data(subject=3,data_directory='P300Data/'):
+def load_erp_data(subject=3,data_directory='P300Data/',epoch_start_time=-0.5, epoch_end_time=1.0):
     
     # load in training data
     eeg_time, eeg_data, rowcol_id, is_target = load_training_eeg(subject, data_directory)
@@ -36,7 +40,7 @@ def load_erp_data(subject=3,data_directory='P300Data/'):
     
     # extract target and nontarget epochs
     event_sample, is_target_event = get_events(rowcol_id, is_target)
-    eeg_epochs, erp_times = epoch_data(eeg_time, eeg_data, event_sample, epoch_start_time=-0.5, epoch_end_time=1.0)
+    eeg_epochs, erp_times = epoch_data(eeg_time, eeg_data, event_sample, epoch_start_time, epoch_end_time)
     
     # calculate ERPs
     target_erp, nontarget_erp = get_erps(eeg_epochs, is_target_event)
