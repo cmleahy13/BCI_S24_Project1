@@ -7,3 +7,5 @@ Created on Mon Feb 12 22:23:10 2024
 """
 
 #%% Part A: Load and Epoch the Data
+
+# Part B: 
