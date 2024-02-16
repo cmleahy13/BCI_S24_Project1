@@ -32,7 +32,7 @@ import plot_topo
     # non_target_erp
     # does not make snese to include eeg_epochs?
 
-def load_erp_data(subject=3,data_directory='P300Data/',epoch_start_time=-0.5, epoch_end_time=1.0):
+def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0):
     
     # load in training data
     eeg_time, eeg_data, rowcol_id, is_target = load_training_eeg(subject, data_directory)
@@ -62,6 +62,10 @@ def load_erp_data(subject=3,data_directory='P300Data/',epoch_start_time=-0.5, ep
     
 # returns:
     # none?
+
+def plot_erps_and_intervals(erp_times, target_erp, nontarget_erp):
+    # would it make sense to call plot_erps here?
+    
 
 #%% Part C: Bootstrap P Values
 
