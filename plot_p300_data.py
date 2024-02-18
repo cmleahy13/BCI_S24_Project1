@@ -45,7 +45,7 @@ def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, 
     # calculate ERPs
     target_erp, nontarget_erp = get_erps(eeg_epochs, is_target_event)
     
-    return erp_times, target_erp, nontarget_erp, eeg_epochs
+    return erp_times, is_target_event, target_erp, nontarget_erp, eeg_epochs
 
 #%% Part B: Calculate & Plot Parametric Confidence Intervals
 
@@ -62,44 +62,55 @@ def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, 
     
 # returns:
     # none?
-def plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp) :
-    ntrials = eeg_epochs.shape[0]  # Number of trials
-    n_channels = eeg_epochs.shape[1]  # Number of channels
+def plot_confidence_intervals(eeg_epochs,is_target_event,erp_times, target_erp, nontarget_erp,subject =3) :
+      
     
-    mean_erp = np.mean(eeg_epochs, axis=0)  # Compute the mean ERP across trials
-    std_erp = np.std(eeg_epochs, axis=0)  # Compute the standard deviation across trials
-    sdmn = std_erp / np.sqrt(ntrials)  # Standard error of the mean
+    meantarget_erp = np.mean(target_erp, axis=1)  # Compute the mean ERP across trials
+    std_erp = np.std(target_erp, axis=1)  # Compute the standard deviation across trials
+    sdmn1 = std_erp / np.sqrt(len(eeg_epochs[is_target_event]))  # Standard error of the mean
+    mean_nontarget_erp = np.mean(nontarget_erp, axis=1) # Compute the mean ERP across trials
+    std_erp2 = np.std(nontarget_erp, axis=1)  # Compute the standard deviation across trials
+    sdmn2 = std_erp2 / np.sqrt(len(eeg_epochs[~is_target_event]))  # Standard error of the mean
+    
     
     # Plot ERPs and confidence intervals for each channel
     fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(12, 10))
     axs = axs.flatten()  # Flatten the 2D array of subplots
     
-    for i in range(n_channels):
+    for i in range(8):
         ax = axs[i]
-        ax.plot(erp_times, mean_erp[:, i], label='Mean ERP', color='blue')
-        ax.fill_between(erp_times, mean_erp[:, i] - 2 * sdmn[:, i], mean_erp[:, i] + 2 * sdmn[:, i], color='blue', alpha=0.2)
-        ax.plot(erp_times, target_erp[:, i], label='Target ERP', color='green')
-        ax.plot(erp_times, nontarget_erp[:, i], label='Non-target ERP', color='red')
+        #ax.plot(erp_times[i], meantarget_erp[i], label='Mean Target ERP', color='teal')
+        #ax.plot(erp_times[i], mean_nontarget_erp[i], label='Mean Non Target ERP', color='pink')
+        ax.fill_between(erp_times, meantarget_erp - 2 * sdmn1, meantarget_erp + 2 * sdmn1,  alpha=0.2, label = 'Target confidence intervals' , lw = 5)
+        ax.fill_between(erp_times, mean_nontarget_erp - 2 * sdmn2, mean_nontarget_erp + 2 * sdmn2, alpha=0.2, label = 'Nontarget confidence intervals', lw = 200)
+        ax.plot(erp_times, target_erp[:, i], label='Target ERP' )
+        ax.plot(erp_times, nontarget_erp[:, i], label='Non-target ERP')
         ax.axvline(0, color='black', linestyle='--')  # Mark stimulus onset
         ax.axhline(0, color='black', linestyle=':')  # Mark zero voltage
         ax.set_title(f'Channel {i+1}')
         ax.set_xlabel('Time (s)')
         ax.set_ylabel('Voltage (μV)')
-        ax.legend()
-    
-    plt.tight_layout()
+        
+        
+        plt.tight_layout()
+        
+    fig.suptitle(f'P300 Speller S{subject} Training ERPs')
+    fig.tight_layout()
+    ax.legend(loc = 'lower right')    
+    fig.delaxes(axs[8])
     plt.show()
 
+"""
 <<<<<<< Updated upstream
 def plot_erps_and_intervals(erp_times, target_erp, nontarget_erp):
     # would it make sense to call plot_erps here?
     
 
 =======
-        
-erp_times, target_erp, nontarget_erp, eeg_epochs = load_erp_data(subject=3,data_directory='P300Data/',epoch_start_time=-0.5, epoch_end_time=1.0)
-plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp)
->>>>>>> Stashed changes
+        """
+erp_times,is_target_event, target_erp, nontarget_erp, eeg_epochs = load_erp_data(subject=3,data_directory='P300Data/',epoch_start_time=-0.5, epoch_end_time=1.0)
+plot_confidence_intervals(eeg_epochs,is_target_event,erp_times, target_erp, nontarget_erp)
+#>>>>>>> Stashed changes
 #%% Part C: Bootstrap P Values
 
 # null hypothesis: no difference between trial types
