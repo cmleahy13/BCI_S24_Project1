@@ -129,12 +129,119 @@ plot_confidence_intervals(eeg_epochs,is_target_event,erp_times, target_erp, nont
     
 # returns:
     # p value?
+def bootstrapping(eeg_epochs, is_target_event, target_erp, nontarget_erp, size=None, iterations=3000):
+    mean_target = np.mean(target_erp, 1)
+    nontarget_mean = np.mean(nontarget_erp, 1)
+    meandiff = mean_target - nontarget_mean
+    stat = max(abs(meandiff))
+    print('stat = {:.4f}'.format(stat))
+    eeg_stack = np.vstack((target_erp, nontarget_erp))
+    #np.random.seed(123)
+    max_abs_diff_samples = []
+    for _ in range(iterations): 
+        ntrials = len(target_erp)
+        if size is None:
+            size = ntrials
+        i = np.random.randint(ntrials, size=size)
+        eeg0 = eeg_stack[i]
+        mean_stacked_epochs = eeg0.mean(1)
+        
+        i = np.random.randint(ntrials, size=size)
+        eeg1 = eeg_stack[i]
+        mean_stacked_epochs_two = eeg1.mean(1)
+        
+        random_mean_diff = np.subtract(mean_stacked_epochs, mean_stacked_epochs_two)
+        max_abs_diff_samples.append(np.max(np.abs(random_mean_diff)))
+    
+    return max_abs_diff_samples, stat
 
+def calculate_p_values(eeg_epochs, is_target_event, target_erp, nontarget_erp, size=None, iterations=3000):
+    # Perform bootstrapping to obtain the distribution of differences
+    print(eeg_epochs.shape[0])
+    max_abs_diff_samples, observed_statistic = bootstrapping(eeg_epochs, is_target_event, target_erp, nontarget_erp, size, iterations)
+    
+    # Calculate p-values
+    p_values = []
+    for i in range(eeg_epochs.shape[2]):  # Iterate over channels
+        for j in eeg_epochs[0]:  # Iterate over time points
+            # Count how many bootstrapped samples have a statistic greater than or equal to the observed statistic
+            count = sum(diff >= observed_statistic for diff in max_abs_diff_samples)
+            # Calculate the p-value as the proportion of samples with a statistic greater than or equal to the observed statistic
+            p_value = count / iterations
+            p_values.append(p_value)
+    
+    # Reshape p-values array to match the shape of the target_erp and nontarget_erp arrays
+    p_values = np.array(p_values).reshape(eeg_epochs[is_target_event].shape[1:])
+    
+    return p_values
 
+# Perform bootstrapping and obtain max_abs_diff samples and initial stat value
+max_abs_diff_samples, initial_stat = bootstrapping(eeg_epochs, is_target_event, target_erp, nontarget_erp)
+p_values = calculate_p_values(eeg_epochs, is_target_event, target_erp, nontarget_erp)
+
+#print(p_values)
+
+# Plot histogram of max_abs_diff samples and initial stat value
+plt.figure(figsize=(8, 6))
+plt.hist(max_abs_diff_samples, bins=10, color='teal', label='Max Absolute Difference')  # Plot histogram of max_abs_diff
+plt.axvline(x=initial_stat, color='orange', linestyle='--', label='Initial Stat Value')  # Plot initial stat value
+plt.xlabel('Max Absolute Difference')
+plt.ylabel('Frequency')
+plt.title('Distribution of Max Absolute Difference from Bootstrap')
+plt.legend()
+plt.show()
+                       
 #%% Part D: Plot FDR-Corrected P Values
 
-# False Discovery Rate correction to correct p values for multiple comparisons
+# False Discovery Rate correction to
+def fdr(erp_times, target_erp, nontarget_erp, p_values, fdr_threshold = 0.05):
+    res, corrected_p_values = fdr_correction(p_values.flatten(), alpha=fdr_threshold)
+    print(res)
+    meantarget_erp = np.mean(target_erp, axis=1)  # Compute the mean ERP across trials
+    std_erp = np.std(target_erp, axis=1)  # Compute the standard deviation across trials
+    sdmn1 = std_erp / np.sqrt(len(eeg_epochs[is_target_event]))  # Standard error of the mean
+    mean_nontarget_erp = np.mean(nontarget_erp, axis=1) # Compute the mean ERP across trials
+    std_erp2 = np.std(nontarget_erp, axis=1)  # Compute the standard deviation across trials
+    sdmn2 = std_erp2 / np.sqrt(len(eeg_epochs[~is_target_event]))  # Standard error of the mean
+    
+    #corrected_p_values = corrected_p_values.reshape(eeg_epochs[is_target_event].shape[1:])
+    #print(corrected_p_values.shape)
+    # Plot ERPs and confidence intervals for each channel
+    fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(12, 10))
+    axs = axs.flatten()  # Flatten the 2D array of subplots
+    #significant_time_points_indices = np.where(corrected_p_values < fdr_threshold)
+    erp_times = np.array(erp_times)
+    for i in range(8):
+        ax = axs[i]
+        #ax.plot(erp_times[i], meantarget_erp[i], label='Mean Target ERP', color='teal')
+        #ax.plot(erp_times[i], mean_nontarget_erp[i], label='Mean Non Target ERP', color='pink')
+        ax.fill_between(erp_times, meantarget_erp - 2 * sdmn1, meantarget_erp + 2 * sdmn1,  alpha=0.2, label = 'Target confidence intervals' , lw = 5)
+        ax.fill_between(erp_times, mean_nontarget_erp - 2 * sdmn2, mean_nontarget_erp + 2 * sdmn2, alpha=0.2, label = 'Nontarget confidence intervals', lw = 200)
+        ax.plot(erp_times, target_erp[:, i], label='Target ERP' )
+        ax.plot(erp_times, nontarget_erp[:, i], label='Non-target ERP')
+        ax.axvline(0, color='black', linestyle='--')  # Mark stimulus onset
+        ax.axhline(0, color='black', linestyle=':')  # Mark zero voltage
+        ax.set_title(f'Channel {i+1}')
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Voltage (μV)')
+        
+        significant_time_points = erp_times[np.where(corrected_p_values < fdr_threshold)]
+        ax.plot(significant_time_points, np.zeros_like(significant_time_points), 'ko')  # Plot black dots on x-axis
+        
+        plt.tight_layout()
+        
+    
+    ax.legend(loc='lower right')
+    fig.delaxes(axs[8])
 
+    # Save the resulting image file
+    plt.show()
+    
+    return None
+
+fdr(erp_times, target_erp, nontarget_erp, p_values, fdr_threshold = 0.05)
+
+#correct p values for multiple comparisons
 # function goals:
     # add black dot on x-axis (ERP and CI) when ERP difference is significant at FDR-correct p value 0.05
     
