@@ -10,7 +10,12 @@ Created on Tue Feb 13 10:03:54 2024
 from plot_p300_data import load_erp_data
 
 # calling the functions defined in the module
-erp_times, target_erp, nontarget_erp, eeg_epochs, is_target_event = load_erp_data(subject=3,data_directory='P300Data/',epoch_start_time=-0.5, epoch_end_time=1.0)
+
+# load data
+is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0)
+
+# plot standard error
+plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp, is_target_event)
 
 #%%
 

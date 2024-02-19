@@ -16,22 +16,6 @@ import plot_topo
 
 #%% Part A: Load and Epoch the Data
 
-# function goals:
-    # load in data
-    # extract target/nontarget epochs
-    # calculate ERPs
-    
-# inputs: 
-    # subject number
-    # does it make sense to include data_directory?
-    # does it also make snese to include epoch_start_time and epoch_end_time?
-    
-# returns: 
-    # erp_times
-    # target_erp
-    # non_target_erp
-    # does not make snese to include eeg_epochs?
-
 def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0):
     
     # load in training data
@@ -45,36 +29,23 @@ def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, 
     # calculate ERPs
     target_erp, nontarget_erp = get_erps(eeg_epochs, is_target_event)
     
-    return erp_times, target_erp, nontarget_erp, eeg_epochs, is_target_event
+    return is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp
 
 #%% Part B: Calculate & Plot Parametric Confidence Intervals
 
-# assuming normal distribution of voltages for each channel and time point
-# define 95% CI based on SE of mean
-
-# function goals:
-    # plot ERPs on each channel for target/nontarget events
-    # plot confidence intervals as error bars
-
-# inputs:
-    # target_erp
-    # nontarget_erp
-    
-# returns:
-    # none?
-def plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp, is_target_event, subject=3):
+def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, subject=3):
     
     target_count = len(eeg_epochs[is_target_event])
     nontarget_count = len(eeg_epochs[~is_target_event])
-    channel_count = eeg_epochs.shape[1]  # Number of channels
+    channel_count = eeg_epochs.shape[1]  # number of channels
     
     # calculate statistics for target ERPs
-    target_standard_deviation = np.std(target_erp, axis=1)  # Compute the standard deviation across trials
-    target_standard_error = target_standard_deviation / np.sqrt(target_count)  # Standard error of the mean
+    target_standard_deviation = np.std(target_erp, axis=1) 
+    target_standard_error = target_standard_deviation / np.sqrt(target_count)
     
     # calculate statistics for nontarget ERPs
-    nontarget_standard_deviation = np.std(nontarget_erp, axis=1)  # Compute the standard deviation across trials
-    nontarget_standard_error = nontarget_standard_deviation / np.sqrt(nontarget_count)  # Standard error of the mean
+    nontarget_standard_deviation = np.std(nontarget_erp, axis=1)
+    nontarget_standard_error = nontarget_standard_deviation / np.sqrt(nontarget_count)
     
     # transpose the erp data to plot, matches average at that sample time to the size of the time array
     target_erp_transpose = np.transpose(target_erp)
@@ -124,8 +95,54 @@ def plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp, i
     plt.savefig(f'P300_S{subject}_channel_plots.png')  # save as image
         
 # call to trouble shoot
-erp_times, target_erp, nontarget_erp, eeg_epochs, is_target_event = load_erp_data(subject=3,data_directory='P300Data/',epoch_start_time=-0.5, epoch_end_time=1.0)
+is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0)
+
 plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp, is_target_event)
+
+# #%%
+# def plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp, is_target_event, subject=3):
+      
+#     # target statistics
+#     mean_target_erp = np.mean(target_erp, axis=1)
+#     std_target_erp = np.std(target_erp, axis=1)
+#     se_target_erp = std_target_erp / np.sqrt(len(eeg_epochs[is_target_event]))  # Standard error of the mean
+    
+#     # nontarget statistics
+#     mean_nontarget_erp = np.mean(nontarget_erp, axis=1)
+#     std_nontarget_erp = np.std(nontarget_erp, axis=1)  # Compute the standard deviation across trials
+#     se_nontarget_erp = std_nontarget_erp / np.sqrt(len(eeg_epochs[~is_target_event]))  # Standard error of the mean
+    
+    
+#     # Plot ERPs and confidence intervals for each channel
+#     fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(12, 10))
+#     axs = axs.flatten()  # Flatten the 2D array of subplots
+    
+#     for i in range(8):
+#         ax = axs[i]
+#         #ax.plot(erp_times[i], meantarget_erp[i], label='Mean Target ERP', color='teal')
+#         #ax.plot(erp_times[i], mean_nontarget_erp[i], label='Mean Non Target ERP', color='pink')
+#         ax.fill_between(erp_times, mean_target_erp - 2 * se_target_erp, mean_target_erp + 2 * se_target_erp,  alpha=0.2, label = 'Target confidence intervals' , lw = 5)
+#         ax.fill_between(erp_times, mean_nontarget_erp - 2 * se_nontarget_erp, mean_nontarget_erp + 2 * se_nontarget_erp, alpha=0.2, label = 'Nontarget confidence intervals', lw = 200)
+#         ax.plot(erp_times, target_erp[:, i], label='Target ERP' )
+#         ax.plot(erp_times, nontarget_erp[:, i], label='Non-target ERP')
+#         ax.axvline(0, color='black', linestyle='--')  # Mark stimulus onset
+#         ax.axhline(0, color='black', linestyle=':')  # Mark zero voltage
+#         ax.set_title(f'Channel {i+1}')
+#         ax.set_xlabel('Time (s)')
+#         ax.set_ylabel('Voltage (μV)')
+        
+        
+#         plt.tight_layout()
+        
+#     fig.suptitle(f'P300 Speller S{subject} Training ERPs')
+#     fig.tight_layout()
+#     ax.legend(loc = 'lower right')    
+#     fig.delaxes(axs[8])
+#     plt.show()
+
+# # erp_times,is_target_event, target_erp, nontarget_erp, eeg_epochs = load_erp_data(subject=3,data_directory='P300Data/',epoch_start_time=-0.5, epoch_end_time=1.0)
+# # plot_confidence_intervals(eeg_epochs,is_target_event,erp_times, target_erp, nontarget_erp)
+
 #%% Part C: Bootstrap P Values
 
 # null hypothesis: no difference between trial types
