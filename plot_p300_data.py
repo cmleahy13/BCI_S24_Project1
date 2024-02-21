@@ -4,6 +4,11 @@
 Created on Mon Feb 12 22:23:10 2024
 
 @authors: Varshney Gentela and Claire Leahy
+
+Sources:
+    
+    Nick Bosley gave tips on approach to standard deviation calculations
+    
 """
 
 # import lab modules (Part A, Part D)
@@ -125,8 +130,8 @@ def calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, non
     channel_count = sampled_target_erp.shape[2]  # number of channels
     
     # finding the test statistic
-    real_erp_difference = test_statistic(target_erp, nontarget_erp) 
-    bootstrapped_erp_difference = test_statistic(sampled_target_erp, sampled_nontarget_erp)
+    real_erp_difference = test_statistic(target_erp, nontarget_erp) # identify real test statistic, the difference between the target_erp and nontarget_erp data 
+    bootstrapped_erp_difference = test_statistic(sampled_target_erp, sampled_nontarget_erp) # identify bootsrapped test statistic, the difference between the sampled target and nontarget data
     
     # preallocate p-value array
     p_values = np.zeros([sample_count, channel_count])
@@ -136,9 +141,13 @@ def calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, non
         
         for sample_index in range(sample_count):
            
-            diff_count = sum(bootstrapped_erp_difference[:, sample_index, channel_index] > real_erp_difference[sample_index, channel_index])
+            # count number of bootstrapped test statistics that are greater than real test statistic
+            difference_count = sum(bootstrapped_erp_difference[:, sample_index, channel_index] > real_erp_difference[sample_index, channel_index]) # apply to all 3000 randomizations at each sample index for each channel
             
-            p_value = diff_count / randomization_count
+            # calculate the p-value
+            p_value = difference_count / randomization_count # find the proportion of bootstrapped statistics that are greater than the real test statistic
+            
+            # add the p-value to the preallocated array for the given sample number and channel
             p_values[sample_index, channel_index] = p_value
     
     return p_values
@@ -167,7 +176,8 @@ def false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_ta
         row_index, column_index = divmod(channel_index, 3)  # wrap around to column 0 for every 3 plots
         
         channel_plot = channel_plots[row_index][column_index] # subplot
-        
+    
+    plt.savefig(f'P300_S{subject}_channel_plots_with_significance.png')
         
     return None
 
