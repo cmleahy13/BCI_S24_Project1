@@ -74,19 +74,23 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         channel_plot.axvline(0, color='black', linestyle='dotted')
         channel_plot.axhline(0, color='black', linestyle='dotted')
         
-        # plot target and nontarget erp data in the subplot
+        # plot ERP data in the subplot
         target_handle, = channel_plot.plot(erp_times, target_erp_transpose[channel_index])
+        
         nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp_transpose[channel_index])
         
         # plot confidence intervals
-        channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
+        target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
         
-        channel_plot.fill_between(erp_times,nontarget_erp_transpose[channel_index] - 2 * nontarget_standard_error, nontarget_erp_transpose[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
+        nontarget_confidence_interval_handle = channel_plot.fill_between(erp_times,nontarget_erp_transpose[channel_index] - 2 * nontarget_standard_error, nontarget_erp_transpose[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
         
         # workaround for legend to only display each entry once
         if channel_index == 0:
             target_handle.set_label('Target')
             nontarget_handle.set_label('Nontarget')
+            target_confidence_interval_handle.set_label('Target +/- 95% CI')
+            nontarget_confidence_interval_handle.set_label('Nontarget +/- 95% CI')
+        
         
         # label each plot's axes and channel number
         channel_plot.set_title(f'Channel {channel_index}')
@@ -196,11 +200,6 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         target_handle, = channel_plot.plot(erp_times, target_erp_transpose[channel_index])
         nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp_transpose[channel_index])
         
-        # plot confidence intervals
-        channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
-        
-        channel_plot.fill_between(erp_times,nontarget_erp_transpose[channel_index] - 2 * nontarget_standard_error, nontarget_erp_transpose[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
-        
         # generate times to plot
         is_significant = np.array(np.where(corrected_p_values[0, :, channel_index] == 1))
         significant_times = []
@@ -209,13 +208,20 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         significant_count = len(np.array(significant_times))
         
         # plot significant points
-        channel_plot.plot(significant_times, np.zeros(significant_count), 'ko', markersize=3)
+        significance_handle, = channel_plot.plot(significant_times, np.zeros(significant_count), 'ko', markersize=3)
         
+        # plot confidence intervals
+        target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
+        
+        nontarget_confidence_interval_handle = channel_plot.fill_between(erp_times,nontarget_erp_transpose[channel_index] - 2 * nontarget_standard_error, nontarget_erp_transpose[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
         
         # workaround for legend to only display each entry once
         if channel_index == 0:
             target_handle.set_label('Target')
             nontarget_handle.set_label('Nontarget')
+            significance_handle.set_label('$p_{FDR}$ < 0.05')
+            target_confidence_interval_handle.set_label('Target +/- 95% CI')
+            nontarget_confidence_interval_handle.set_label('Nontarget +/- 95% CI')
         
         # label each plot's axes and channel number
         channel_plot.set_title(f'Channel {channel_index}')
@@ -224,7 +230,7 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     
     # formatting
     figure.suptitle(f'P300 Speller S{subject} Training ERPs')
-    figure.legend(loc='lower right', fontsize='xx-large') # legend in space of nonexistent plot 9
+    figure.legend(loc='lower right', fontsize='x-large') # legend in space of nonexistent plot 9
     figure.tight_layout()  # stop axis labels overlapping titles
     
     # save image
@@ -244,7 +250,7 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
 # returns:
     # none?
 
-def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000):
+def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000, fdr_threshold=0.05):
     
     for subject in subjects:
         
@@ -270,10 +276,10 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
             sampled_nontarget_erp[randomization_index,:] = bootstrap_erps(eeg_epochs, is_target_event)[1][:,:]
             
         # find p_values
-        p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp,randomization_count=3000)
+        p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp,randomization_count)
         
         # FDR correction and plotting
-        plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject, fdr_threshold = 0.05)
+        plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject, fdr_threshold)
         
         # declare an array of zeros to determine significance
         # track number of subjects where a point in time is significant for each channel

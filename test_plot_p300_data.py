@@ -51,7 +51,7 @@ p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_e
 plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject=3, fdr_threshold = 0.05)
 
 #%% Multiple subjects comparison
-multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000)
+#multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000)
 
 #%% Spatial map
 
