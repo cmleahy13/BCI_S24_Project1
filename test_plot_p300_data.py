@@ -9,7 +9,7 @@ Created on Tue Feb 13 10:03:54 2024
 #%% Import functions to be called
 
 import numpy as np
-from plot_p300_data import load_erp_data, plot_confidence_intervals, bootstrap_erps, test_statistic, calculate_p_values, false_discovery_rate
+from plot_p300_data import load_erp_data, plot_confidence_intervals, bootstrap_erps, test_statistic, calculate_p_values, plot_false_discovery_rate, multiple_subject_evaluation, plot_spatial_map
 
 #%% Load data
 
@@ -41,11 +41,18 @@ for randomization_index in range(randomization_count):
     
 # find test statistics
 bootstrapped_erp_difference = test_statistic(sampled_target_erp, sampled_nontarget_erp)
-
 real_erp_difference = test_statistic(target_erp, nontarget_erp)
 
+# determine p_values
 p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp,randomization_count=3000)
 
 #%% FDR correction
 
-false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject=3, fdr_threshold = 0.05)
+plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject=3, fdr_threshold = 0.05)
+
+#%% Multiple subjects comparison
+multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000)
+
+#%% Spatial map
+
+#plot_spatial_map(eeg_epochs, is_target_event, subject=3)
