@@ -72,6 +72,7 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     """
     Description
     -----------
+    This function is utilized to plot the ERP data as well as the 95% confidence intervals of the EEG data. To plot the confidence intervals, it is necessary to calculate standard error (found by obtaining the standard deviation of the EEG data at target and nontarget epochs). By calculating standard error, a normal distribution is assumed; however, it is important to note that the data is likely not normally distributed. After calculating the standard error, the 95% confidence intervals are calculated roughly be computing the (ERP data) +/- (2*standard error) for target and nontarget events.
 
     Parameters
     ----------
@@ -205,6 +206,7 @@ def calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, non
     """
     Description
     -----------
+    This function plots data 
 
     Parameters
     ----------
