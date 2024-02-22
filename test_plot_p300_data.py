@@ -35,30 +35,35 @@ sampled_target_erp = np.zeros([randomization_count,sample_count,channel_count])
 sampled_nontarget_erp = np.zeros([randomization_count,sample_count,channel_count])
 
 # perform the bootstrapping
-for randomization_index in range(randomization_count):
+for randomization_index in range(randomization_count): # perform 3000 randomizations of the bootstrap function
         
     # resample targets
-    sampled_target_erp[randomization_index,:] = bootstrap_erps(eeg_epochs, is_target_event)[0][:,:]
+    sampled_target_erp[randomization_index,:] = bootstrap_erps(eeg_epochs, is_target_event)[0][:,:] # 1st return of bootstrap function is for target ERPs
     
     # resample nontargets
-    sampled_nontarget_erp[randomization_index,:] = bootstrap_erps(eeg_epochs, is_target_event)[1][:,:]
+    sampled_nontarget_erp[randomization_index,:] = bootstrap_erps(eeg_epochs, is_target_event)[1][:,:] # 2nd return of bootstrap function is for nontarget ERPs
     
 # find test statistics
-bootstrapped_erp_difference = test_statistic(sampled_target_erp, sampled_nontarget_erp)
-real_erp_difference = test_statistic(target_erp, nontarget_erp)
+bootstrapped_erp_difference = test_statistic(sampled_target_erp, sampled_nontarget_erp) # resampled data
+real_erp_difference = test_statistic(target_erp, nontarget_erp) # actual data
 
 # determine p_values
 p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp) # default conditions
 
 #%% FDR correction
 
-significant_times = plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject=3, fdr_threshold = 0.05)
+# plotting function that returns time points for use within other functions
+significant_times = plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values) # default conditions
 
 #%% Multiple subjects comparison
+
+# perform the loop on relevant subjects
 subject_significance = multiple_subject_evaluation() # default conditions
 
+# plot the number of subjects with significant sample time in a channel
 plot_subject_significance(erp_times, subject_significance)
 
 #%% Spatial map
 
+# generate scalp maps
 plot_spatial_map(eeg_epochs, is_target_event, erp_times)
