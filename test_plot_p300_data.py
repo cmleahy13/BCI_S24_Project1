@@ -19,7 +19,7 @@ from plot_topo import plot_topo, get_channel_names
 #%% Load data
 
 is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0)
-
+#print(target_erp[:,7])
 #%% Plot confidence intervals standard error
 
 plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp, is_target_event)
@@ -56,11 +56,19 @@ p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_e
 plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject=3, fdr_threshold = 0.05)
 
 #%% Multiple subjects comparison
+<<<<<<< Updated upstream
 combined_eeg = multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000)
 
 #%% Spatial map
 target_median, nontarget_median = compute_group_median(eeg_epochs, is_target_event)
 channel_names = get_channel_names(montage_name='biosemi64')
+=======
+subject_significance = multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', sample_count=384, channel_count=8, epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000, fdr_threshold=0.05)
+#%%
+plot_subject_significance(erp_times, subject_significance)
+
+#%% Spatial map"
+>>>>>>> Stashed changes
 
 #plot_spatial_map(eeg_epochs, is_target_event, subject=3)
 >>>>>>> Stashed changes

@@ -60,11 +60,17 @@ def plot_topo(channel_names=[], channel_data=[],title='',cbar_label='Voltage (uV
     # Create MNE evoked array object with our data & channel info
     fake_evoked = mne.EvokedArray(channel_data, fake_info)
     fake_evoked.set_montage(montage) # set montage (channel locations)
-
+   
     # Clear current axes
+<<<<<<< Updated upstream
     plt.cla()    
     # Plot topomap on current axes    
     im,_ = mne.viz.plot_topomap(fake_evoked.data[:, 0], fake_evoked.info,show=True)
+=======
+    plt.cla()
+    # Plot topomap on current axes
+    im,_ = mne.viz.plot_topomap(fake_evoked.data[:,0], fake_evoked.info,show=True,axes=plt.gca())
+>>>>>>> Stashed changes
     # Annotate plot
     plt.title(title)
     cbar = plt.colorbar(im,label=cbar_label)

@@ -105,6 +105,72 @@ def plot_confidence_intervals(eeg_epochs,is_target_event,erp_times, target_erp, 
 def plot_erps_and_intervals(erp_times, target_erp, nontarget_erp):
     # would it make sense to call plot_erps here?
     
+<<<<<<< Updated upstream
+=======
+    # identify necessary counts
+    target_count = len(eeg_epochs[is_target_event])
+    nontarget_count = len(eeg_epochs[~is_target_event])
+    channel_count = eeg_epochs.shape[2]
+    
+       
+    
+    # transpose the erp data to plot, matches average at that sample time to the size of the time array
+    target_erp_transpose = np.transpose(target_erp)
+    nontarget_erp_transpose = np.transpose(nontarget_erp)
+    
+    # plot ERPs for events for each channel
+    figure, channel_plots = plt.subplots(3,3, figsize=(10, 6))
+    channel_plots[2][2].remove()  # only 8 channels, 9th plot unnecessary
+   
+    for channel_index in range(channel_count):
+        
+        # calculate statistics for target ERPs
+        target_standard_deviation = np.std(eeg_epochs[is_target_event,:,channel_index], axis=0) # standard deviation of EEG data for target events at a given sample time point
+        target_standard_error = target_standard_deviation / np.sqrt(target_count) # standard error for targets
+        
+        # calculate statistics for nontarget ERPs
+        nontarget_standard_deviation = np.std(eeg_epochs[~is_target_event,:,channel_index], axis=0) # standard deviation of EEG data for nontarget events at a given sample time point
+        nontarget_standard_error = nontarget_standard_deviation / np.sqrt(nontarget_count) # standard error for nontargets
+        
+        row_index, column_index = divmod(channel_index, 3)  # wrap around to column 0 for every 3 plots
+        
+        channel_plot = channel_plots[row_index][column_index] # subplot
+        
+        # plot dotted lines for time 0 and 0 voltage
+        channel_plot.axvline(0, color='black', linestyle='dotted')
+        channel_plot.axhline(0, color='black', linestyle='dotted')
+        
+        # plot ERP data in the subplot
+        target_handle, = channel_plot.plot(erp_times, target_erp_transpose[channel_index])
+        
+        nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp_transpose[channel_index])
+        
+        # plot confidence intervals
+        target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
+        
+        nontarget_confidence_interval_handle = channel_plot.fill_between(erp_times,nontarget_erp_transpose[channel_index] - 2 * nontarget_standard_error, nontarget_erp_transpose[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
+        
+        # workaround for legend to only display each entry once
+        if channel_index == 0:
+            target_handle.set_label('Target')
+            nontarget_handle.set_label('Nontarget')
+            target_confidence_interval_handle.set_label('Target +/- 95% CI')
+            nontarget_confidence_interval_handle.set_label('Nontarget +/- 95% CI')
+        
+        
+        # label each plot's axes and channel number
+        channel_plot.set_title(f'Channel {channel_index}')
+        channel_plot.set_xlabel('time from flash onset (s)')
+        channel_plot.set_ylabel('Voltage (μV)')
+    
+    # formatting
+    figure.suptitle(f'P300 Speller S{subject} Training ERPs')
+    figure.legend(loc='lower right', fontsize='x-large') # legend in space of nonexistent plot 9
+    figure.tight_layout()  # stop axis labels overlapping titles
+    
+    # save image
+    plt.savefig(f'P300_S{subject}_channel_plots.png')
+>>>>>>> Stashed changes
 
 =======
         """
@@ -247,7 +313,87 @@ fdr(erp_times, target_erp, nontarget_erp, p_values, fdr_threshold = 0.05)
     
 # inputs:
     
+<<<<<<< Updated upstream
 # returns:
+=======
+    corrected_p_values = np.array(fdr_correction(p_values, alpha=fdr_threshold))
+    
+    significant_times = [[] for _ in range(channel_count)]
+    
+        
+        
+    
+    # transpose the erp data to plot, matches average at that sample time to the size of the time array
+    target_erp_transpose = np.transpose(target_erp)
+    nontarget_erp_transpose = np.transpose(nontarget_erp)
+    
+    # plot ERPs for events for each channel
+    figure, channel_plots = plt.subplots(3,3, figsize=(10, 6))
+    channel_plots[2][2].remove()  # only 8 channels, 9th plot unnecessary
+   
+    for channel_index in range(channel_count):
+        
+        # calculate statistics for target ERPs
+        target_standard_deviation = np.std(eeg_epochs[is_target_event,:,channel_index], axis=0) # standard deviation of EEG data for target events at a given sample time point
+        target_standard_error = target_standard_deviation / np.sqrt(target_count) # standard error for targets
+        
+        # calculate statistics for nontarget ERPs
+        nontarget_standard_deviation = np.std(eeg_epochs[~is_target_event,:,channel_index], axis=0) # standard deviation of EEG data for nontarget events at a given sample time point
+        nontarget_standard_error = nontarget_standard_deviation / np.sqrt(nontarget_count) # standard error for nontargets
+        
+
+        row_index, column_index = divmod(channel_index, 3)  # wrap around to column 0 for every 3 plots
+        
+        channel_plot = channel_plots[row_index][column_index] # subplot
+        
+        # plot dotted lines for time 0 and 0 voltage
+        channel_plot.axvline(0, color='black', linestyle='dotted')
+        channel_plot.axhline(0, color='black', linestyle='dotted')
+        
+        # plot target and nontarget erp data in the subplot
+        target_handle, = channel_plot.plot(erp_times, target_erp_transpose[channel_index])
+        nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp_transpose[channel_index])
+        
+        # generate times to plot
+        is_significant = np.array(np.where(corrected_p_values[0, :, channel_index] == 1)) # evaluate across all samples for a channel when  p_value < fdr_threshold is true
+        #significant_times = []
+        for significant_index in is_significant[0]:
+            #significant_times.append(erp_times[significant_index])
+            significant_times[channel_index].append(erp_times[significant_index])
+        significant_count = len(np.array(significant_times[channel_index]).T)
+        
+        # plot significant points
+        #significance_handle, = channel_plot.plot(significant_times, np.zeros(significant_count), 'ko', markersize=3)
+        significance_handle, = channel_plot.plot(np.array(significant_times[channel_index]), np.zeros(significant_count), 'ko', markersize=3)
+        
+        # plot confidence intervals
+        target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
+        
+        nontarget_confidence_interval_handle = channel_plot.fill_between(erp_times,nontarget_erp_transpose[channel_index] - 2 * nontarget_standard_error, nontarget_erp_transpose[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
+        
+        # workaround for legend to only display each entry once
+        if channel_index == 0:
+            target_handle.set_label('Target')
+            nontarget_handle.set_label('Nontarget')
+            significance_handle.set_label('$p_{FDR}$ < 0.05')
+            target_confidence_interval_handle.set_label('Target +/- 95% CI')
+            nontarget_confidence_interval_handle.set_label('Nontarget +/- 95% CI')
+        
+        # label each plot's axes and channel number
+        channel_plot.set_title(f'Channel {channel_index}')
+        channel_plot.set_xlabel('time from flash onset (s)')
+        channel_plot.set_ylabel('Voltage (μV)')
+    
+    # formatting
+    figure.suptitle(f'P300 Speller S{subject} Training ERPs')
+    figure.legend(loc='lower right', fontsize='x-large') # legend in space of nonexistent plot 9
+    figure.tight_layout()  # stop axis labels overlapping titles
+    
+    # save image
+    plt.savefig(f'P300_S{subject}_channel_plots_with_significance.png')  # save as image
+    
+    return significant_times
+>>>>>>> Stashed changes
 
 #%% Part E: Evaluate Across Subjects
 
@@ -297,7 +443,65 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
         p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp,randomization_count=3000)
         
         # FDR correction and plotting
+<<<<<<< Updated upstream
         plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject, fdr_threshold = 0.05)
+=======
+        significant_times = plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject, fdr_threshold)
+        
+        # counting the number of subjects that are significant for a given sample on a given channel
+        for time_index in range(sample_count):
+            for channel_index in range(channel_count):
+                for i in range(len(significant_times[channel_index])):
+                    if significant_times[channel_index][i] == erp_times[time_index]:
+                        subject_significance[channel_index,time_index] = subject_significance[channel_index,time_index]+1
+                        
+    return erp_times, subject_significance
+
+def plot_subject_significance(erp_times, subject_significance):
+    """
+    Description
+    -----------
+
+    Parameters
+    ----------
+    erp_times : Sx1 array of floats, where S is the number of samples in each epoch
+        Array containing the times of each sample relative to the event onset in seconds.
+    subject_significance : CxS array of floats, where C is the number of channels and S is the number of samples per epoch
+        Array containing the number of subjects that possess statistically significant data (the corrected p-value is less than the fdr_threshold value) for each sample in each channel.
+        
+    Returns
+    -------
+    None.
+
+    """
+    
+    channel_count = len(subject_significance[1])
+    
+    figure, channel_plots = plt.subplots(3,3, figsize=(10, 6), sharey=True)
+    
+    channel_plots[2][2].remove()  # only 8 channels, 9th plot unnecessary
+    
+    for channel_index in range(channel_count):
+        
+        row_index, column_index = divmod(channel_index, 3)  # wrap around to column 0 for every 3 plots
+        
+        channel_plot = channel_plots[row_index][column_index] # subplot
+        
+        channel_plot.plot(erp_times, subject_significance[1][channel_index])
+        
+        # label each plot's axes and channel number
+        channel_plot.set_title(f'Channel {channel_index}')
+        channel_plot.set_xlabel('time (s)')
+        channel_plot.set_ylabel('# subjects significant')
+        channel_plot.grid(True)
+    
+    # formatting
+    figure.suptitle('Number of Significant Subjects by Channel')
+    figure.tight_layout()  # stop axis labels overlapping titles
+    
+    # save image
+    plt.savefig('subject_significance_channel_plots.png')  
+>>>>>>> Stashed changes
         
         # declare an array of zeros to determine significance
         # track number of subjects where a point in time is significant for each channel
@@ -311,6 +515,7 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
 
 #%% Part F: Plot a Spatial Map
 
+<<<<<<< Updated upstream
 # function goals:
     # get group median ERP across all trials 
     # get subject median ERP across all trials
@@ -381,4 +586,76 @@ def plot_spatial_map(eeg_epochs, is_target_event,erp_times,combined_eeg, is_targ
     plot_topo.plot_topo(['Fz', 'Cz', 'P3', 'Pz', 'P4', 'P7', 'P8', 'Oz'], median_target_erp, f'Subject{subject} P300 Spatial Map');
     
         
+>>>>>>> Stashed changes
+=======
+def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(3,11), data_directory='P300Data/'):
+        """
+       Description
+       -----------
+       This function plots spatial maps for the group median target and nontarget ERPs (Event-Related Potentials)
+       for N2 (200-300 ms) and P3b (300-500 ms) time ranges.
+    
+       Parameters
+       ----------
+       eeg_epochs : ExSxC array of floats, where E is the number of epochs, S is the number of samples in each epoch, and C is the number of channels
+           Array containing the sample EEG data from each channel that occurs at each event (epoch).
+       is_target_event : Ex1 Boolean array, where E is the number of samples in which an event occurred
+           Array holding truth data pertaining to whether each event that occurred was a target (True) or nontarget (False).
+       erp_times : Sx1 array of floats, where S is the number of samples in each epoch
+           Array containing the times of each sample relative to the event onset in seconds.
+       subjects : array-like, optional
+           Array containing the subjects to be included. The default is np.arange(3,11).
+       data_directory : str, optional
+           Directory where the ERP data is stored. The default is 'P300Data/'.
+    
+       Returns
+       -------
+       None
+    
+       """
+        individual_erp_target = []
+        individual_erp_nontarget = []    
+        for subject in subjects:
+            is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject, data_directory,  epoch_start_time=-0.5, epoch_end_time=1.0)
+     
+            individual_erp_target.append(np.median(eeg_epochs[is_target_event],axis = 0))
+            individual_erp_nontarget.append(np.median(eeg_epochs[~is_target_event],axis =0))
+    
+        individual_erp_target = np.array(individual_erp_target)
+        individual_erp_nontarget = np.array(individual_erp_nontarget)
+        
+    
+        group_median_erp_target = np.median(individual_erp_target, axis=0)
+        group_median_erp_nontarget = np.median(individual_erp_nontarget, axis=0)
+        
+        
+        
+        erp_times = np.array(erp_times)
+        n2_time_range = (0.2, 0.3)  # 200-300 ms
+        p3b_time_range = (0.3, 0.5)  # 300-500 ms
+        n2_start_time, n2_end_time = n2_time_range
+        p3b_start_time, p3b_end_time = p3b_time_range
+        n2_start_index = np.argmin(np.abs(erp_times >=n2_start_time))
+        n2_end_index = np.argmin(np.abs(erp_times <= n2_end_time))
+        p3b_start_index = np.argmin(erp_times >= p3b_start_time)
+        p3b_end_index = np.argmin(erp_times <= p3b_end_time)
+        
+        
+        # Extract target and nontarget ERPs for N2 and P3b time ranges
+        target_n2 = group_median_erp_target[n2_start_index:n2_end_index, :]
+        target_p3b = group_median_erp_target[p3b_start_index:p3b_end_index, :]   
+        nontarget_n2 = group_median_erp_nontarget[n2_start_index:n2_end_index, :]
+        nontarget_p3b = group_median_erp_nontarget[p3b_start_index:p3b_end_index, :]
+       
+        
+        channel_names = ['Fz','Cz','P3','Pz','P4','P7','Oz','P8']
+        # Plot topomaps for N2 and P3b time ranges
+        plt.figure(figsize=(10, 6))
+        plot_topo(channel_names, channel_data=target_n2.T, title='Group Median Target N2', montage_name='standard_1020')
+        plt.figure(figsize=(10, 6))
+        plot_topo(channel_names, channel_data=nontarget_n2.T, title='Group Median Nontarget N2')
+        plt.figure(figsize=(10, 6))
+        plot_topo(channel_names, channel_data=target_p3b.T, title='Group Median Target P3b')
+        plt.figure(figsize=(10, 6))
+        plot_topo(channel_names, channel_data=nontarget_p3b.T, title='Group Median Nontarget P3b')
 >>>>>>> Stashed changes
