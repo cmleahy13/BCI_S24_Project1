@@ -7,6 +7,11 @@ test_plot_p300_data.py
 
 This file serves as the test script for Project 1 for BCI-S24. The functions from the module script are first imported so that they can be called here. This script primarily calls the functions under their default conditions, which primarily indicates the data are evaluated for subject 3. The actions of the functions called include loading the training data, plotting the ERP data with their 95% confidence intervals, bootstrapping the data, finding test statistics and using them for p-value calculations, and obtaining signficance by adjusting the p-values for multiple corrections. After these actions are performed, virtually all of them are called again in the function multiple_subject_evaluation, which calls these functions on subjects 3-10 (per default conditions). A plot is then produced to depict how many subjects exhibit significance at a sample in a channel. A scalp map is also produced as a visual representation of voltage by channel location.
 
+Relevant abbreviations:
+    EEG: electroencephalography
+    ERP: event-related potential
+    FDR: false discovery rate
+
 @author: Varshney Gentela and Claire Leahy
 """
 

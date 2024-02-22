@@ -7,6 +7,11 @@ plot_p300_data.py
 
 This file serves as the module for Project 1 in BCI-S24. The ultimate purpose of this script is to generate plots that depict ERP data from a P300 Speller with 95% confidence intervals (under the assumption of a normal distribution) and number of subjects that are significant for a particular sample in a given channel (where the data for the test statistic is bootstrapped, creating a normal distribution of means). These plots generate observable patterns pertaining to the usefulness of a P300 Speller as a potentially effective BCI. In addition, a function generating scalp maps for the ERP data is included, which provides a visual interpretation of channel location spatially (as voltage from ERPs are color-coded).
 
+Relevant abbreviations:
+    EEG: electroencephalography
+    ERP: event-related potential
+    FDR: false discovery rate
+
 @authors: Varshney Gentela and Claire Leahy
 
 Sources:
@@ -62,11 +67,11 @@ def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, 
     
     
     # extract target and nontarget epochs
-    event_sample, is_target_event = get_events(rowcol_id, is_target)
-    eeg_epochs, erp_times = epoch_data(eeg_time, eeg_data, event_sample, epoch_start_time, epoch_end_time)
+    event_sample, is_target_event = get_events(rowcol_id, is_target) # find events, which events are targets
+    eeg_epochs, erp_times = epoch_data(eeg_time, eeg_data, event_sample, epoch_start_time, epoch_end_time) # generate epochs given events, corresponding relative tiems
     
     # calculate ERPs
-    target_erp, nontarget_erp = get_erps(eeg_epochs, is_target_event)
+    target_erp, nontarget_erp = get_erps(eeg_epochs, is_target_event) # get ERPs (mean EEG data)
     
     return is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp
 
