@@ -99,11 +99,11 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     
     # formatting
     figure.suptitle(f'P300 Speller S{subject} Training ERPs')
-    figure.legend(loc='lower right', fontsize='xx-large') # legend in space of nonexistent plot 9
+    figure.legend(loc='lower right', fontsize='x-large') # legend in space of nonexistent plot 9
     figure.tight_layout()  # stop axis labels overlapping titles
     
     # save image
-    plt.savefig(f'P300_S{subject}_channel_plots.png')  # save as image
+    plt.savefig(f'P300_S{subject}_channel_plots.png')
 
 #%% Part C: Bootstrap P Values
 
@@ -167,6 +167,8 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     
     corrected_p_values = np.array(fdr_correction(p_values, alpha=fdr_threshold))
     
+    significant_times = [[] for _ in range(channel_count)]
+    
     # statistics calculated for given channel
     for channel_index in range(channel_count):
         
@@ -201,14 +203,16 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp_transpose[channel_index])
         
         # generate times to plot
-        is_significant = np.array(np.where(corrected_p_values[0, :, channel_index] == 1))
-        significant_times = []
+        is_significant = np.array(np.where(corrected_p_values[0, :, channel_index] == 1)) # evaluate across all samples for a channel when  p_value < fdr_threshold is true
+        #significant_times = []
         for significant_index in is_significant[0]:
-            significant_times.append(erp_times[significant_index])
-        significant_count = len(np.array(significant_times))
+            #significant_times.append(erp_times[significant_index])
+            significant_times[channel_index].append(erp_times[significant_index])
+        significant_count = len(np.array(significant_times[channel_index]).T)
         
         # plot significant points
-        significance_handle, = channel_plot.plot(significant_times, np.zeros(significant_count), 'ko', markersize=3)
+        #significance_handle, = channel_plot.plot(significant_times, np.zeros(significant_count), 'ko', markersize=3)
+        significance_handle, = channel_plot.plot(np.array(significant_times[channel_index]), np.zeros(significant_count), 'ko', markersize=3)
         
         # plot confidence intervals
         target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
@@ -235,6 +239,8 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     
     # save image
     plt.savefig(f'P300_S{subject}_channel_plots_with_significance.png')  # save as image
+    
+    return significant_times
 
 #%% Part E: Evaluate Across Subjects
 
@@ -250,7 +256,11 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
 # returns:
     # none?
 
-def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000, fdr_threshold=0.05):
+def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', sample_count=384, channel_count=8, epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000, fdr_threshold=0.05):
+    
+    # preallocate array for editing with each subject
+    # set to empty list since necessary inputs obtained in subject loop for dynamic variables
+    subject_significance = np.zeros([channel_count, sample_count])
     
     for subject in subjects:
         
@@ -258,9 +268,6 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
         is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject, data_directory, epoch_start_time, epoch_end_time)
         
         # bootstrapping
-        # declare necessary variables
-        sample_count = eeg_epochs.shape[1]
-        channel_count = eeg_epochs.shape[2]
 
         # preallocate arrays for resampled data 
         sampled_target_erp = np.zeros([randomization_count,sample_count,channel_count])
@@ -279,16 +286,60 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
         p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp,randomization_count)
         
         # FDR correction and plotting
-        plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject, fdr_threshold)
+        significant_times = plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject, fdr_threshold)
         
-        # declare an array of zeros to determine significance
         # track number of subjects where a point in time is significant for each channel
         # do this with boolean indexing: true if the sample in time for that subject and channel is significant
         # use np.sum to track total, likely want (384,8) array
         # return the sum, take into next function
+        
+        # for significant_index in is_significant[0]:
+        #     significant_times.append(erp_times[significant_index])
+        # significant_count = len(np.array(significant_times))
+        
+        # add 1 to count at a sample index if a subject has a value for that time
+        # for a time in erp_times
+            # if that time is also in significant times
+                # add 1 to that time point in subject_significance
+        
+        for time_index in range(sample_count):
+            for channel_index in range(channel_count):
+                for i in range(len(significant_times[channel_index])):
+                    if significant_times[channel_index][i] == erp_times[time_index]:
+                        subject_significance[channel_index,time_index] = subject_significance[channel_index,time_index]+1
+                        
+    return erp_times, subject_significance
             
 
-#def subject_significance_plots():
+def plot_subject_significance(erp_times, subject_significance):
+    
+    channel_count = len(subject_significance)
+    
+    figure, channel_plots = plt.subplots(3,3, figsize=(10, 6), sharey=True)
+    
+    channel_plots[2][2].remove()  # only 8 channels, 9th plot unnecessary
+    
+    for channel_index in range(channel_count):
+        
+        row_index, column_index = divmod(channel_index, 3)  # wrap around to column 0 for every 3 plots
+        
+        channel_plot = channel_plots[row_index][column_index] # subplot
+        
+        channel_plot.plot(erp_times, subject_significance[channel_index])
+        
+        # label each plot's axes and channel number
+        channel_plot.set_title(f'Channel {channel_index}')
+        channel_plot.set_xlabel('time (s)')
+        channel_plot.set_ylabel('# subjects significant')
+        channel_plot.grid(True)
+    
+    # formatting
+    figure.suptitle('Number of Significant Subjects by Channel')
+    figure.tight_layout()  # stop axis labels overlapping titles
+    
+    # save image
+    plt.savefig('subject_significance_channel_plots.png')  
+        
 
 #%% Part F: Plot a Spatial Map
 

@@ -9,7 +9,7 @@ Created on Tue Feb 13 10:03:54 2024
 #%% Import functions to be called
 
 import numpy as np
-from plot_p300_data import load_erp_data, plot_confidence_intervals, bootstrap_erps, test_statistic, calculate_p_values, plot_false_discovery_rate, multiple_subject_evaluation, plot_spatial_map
+from plot_p300_data import load_erp_data, plot_confidence_intervals, bootstrap_erps, test_statistic, calculate_p_values, plot_false_discovery_rate, multiple_subject_evaluation, plot_subject_significance, plot_spatial_map
 
 #%% Load data
 
@@ -48,10 +48,12 @@ p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_e
 
 #%% FDR correction
 
-plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject=3, fdr_threshold = 0.05)
+significant_times = plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject=3, fdr_threshold = 0.05)
 
 #%% Multiple subjects comparison
-#multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000)
+subject_significance = multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', sample_count=384, channel_count=8, epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000, fdr_threshold=0.05)
+
+plot_subject_significance(erp_times, subject_significance)
 
 #%% Spatial map
 
