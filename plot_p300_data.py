@@ -25,6 +25,7 @@ def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, 
     """
     Description
     -----------
+    This function loads the training data for a given subject from a given directory using the load_training_eeg function defined in an earlier module. After obtaining the relevant EEG data for the subject, this function also gets the samples where events (flashes) occur using get_events as well as the epochs (using epoch_data), which is a designated amount of time surrounding an event occurrence as defined by epoch_start_time and epoch_end_time. Finally, the ERP data, or mean EEG data, is obtained using get_erps. The function returns were identified based on the needs of subsequent functions, primarily those involved in plotting the EEG and/or ERP data.
 
     Parameters
     ----------
