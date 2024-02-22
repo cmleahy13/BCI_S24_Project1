@@ -3,6 +3,10 @@
 """
 Created on Mon Feb 12 22:23:10 2024
 
+plot_p300_data.py
+
+This file serves as the module for Project 1 in BCI-S24. The ultimate purpose of this script is to generate plots that depict ERP data from a P300 Speller with 95% confidence intervals (under the assumption of a normal distribution) and number of subjects that are significant for a particular sample in a given channel (where the data for the test statistic is bootstrapped, creating a normal distribution of means). These plots generate observable patterns pertaining to the usefulness of a P300 Speller as a potentially effective BCI. In addition, a function generating scalp maps for the ERP data is included, which provides a visual interpretation of channel location spatially (as voltage from ERPs are color-coded).
+
 @authors: Varshney Gentela and Claire Leahy
 
 Sources:
@@ -100,7 +104,10 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     nontarget_count = len(eeg_epochs[~is_target_event])
     channel_count = eeg_epochs.shape[2]
     
-    # statistics calculated for given channel
+    # plot ERPs for events for each channel
+    figure, channel_plots = plt.subplots(3,3, figsize=(10, 6))
+    channel_plots[2][2].remove()  # only 8 channels, 9th plot unnecessary
+   
     for channel_index in range(channel_count):
         
         # calculate statistics for target ERPs
@@ -110,16 +117,6 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         # calculate statistics for nontarget ERPs
         nontarget_standard_deviation = np.std(eeg_epochs[~is_target_event,:,channel_index], axis=0) # standard deviation of EEG data for nontarget events at a given sample time point
         nontarget_standard_error = nontarget_standard_deviation / np.sqrt(nontarget_count) # standard error for nontargets
-    
-    # transpose the erp data to plot, matches average at that sample time to the size of the time array
-    target_erp_transpose = np.transpose(target_erp)
-    nontarget_erp_transpose = np.transpose(nontarget_erp)
-    
-    # plot ERPs for events for each channel
-    figure, channel_plots = plt.subplots(3,3, figsize=(10, 6))
-    channel_plots[2][2].remove()  # only 8 channels, 9th plot unnecessary
-   
-    for channel_index in range(channel_count):
         
         row_index, column_index = divmod(channel_index, 3)  # wrap around to column 0 for every 3 plots
         
@@ -130,14 +127,14 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         channel_plot.axhline(0, color='black', linestyle='dotted')
         
         # plot ERP data in the subplot
-        target_handle, = channel_plot.plot(erp_times, target_erp_transpose[channel_index])
+        target_handle, = channel_plot.plot(erp_times, target_erp.T[channel_index])
         
-        nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp_transpose[channel_index])
+        nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp.T[channel_index])
         
         # plot confidence intervals
-        target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
+        target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp.T[channel_index] - 2 * target_standard_error, target_erp.T[channel_index] + 2 * target_standard_error, alpha=0.25)
         
-        nontarget_confidence_interval_handle = channel_plot.fill_between(erp_times,nontarget_erp_transpose[channel_index] - 2 * nontarget_standard_error, nontarget_erp_transpose[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
+        nontarget_confidence_interval_handle = channel_plot.fill_between(erp_times,nontarget_erp.T[channel_index] - 2 * nontarget_standard_error, nontarget_erp.T[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
         
         # workaround for legend to only display each entry once
         if channel_index == 0:
@@ -166,6 +163,7 @@ def bootstrap_erps(eeg_epochs, is_target_event):
     """
     Description
     -----------
+    This function begins by generating random indices that will be used to sample from the EEG data with replacement to get a normal distribution of means (mean EEG data, therefore ERP data) per the central limit theorem. The randomly resampled EEG data is put into an array that represents eeg_epochs sampled at those random indices. Under the null hypothesis that there is no difference between target and nontarget ERP data, the random samples are pooled, and to test whether there is any difference between target and nontarget data, the same proportion of target-to-nontarget data is applied when generating the sampled target and nontarget data (i.e. the sampled target ERP data is the mean of the sampled EEG data at indices where there is a target event, even though there is theoretically no difference at these indices under the null hypothesis). Sampled target and nontarget data are returned for use in calculating relevant test statistics.
 
     Parameters
     ----------
@@ -196,6 +194,25 @@ def bootstrap_erps(eeg_epochs, is_target_event):
     return sampled_target_erp, sampled_nontarget_erp
 
 def test_statistic(target_erp_data, nontarget_erp_data):
+    """
+    Description
+    -----------
+    This function calculates the test statistic of interest, which is the absolute value of the difference between target and nontarget ERP data.
+
+    Parameters
+    ----------
+    target_erp_data : RxSxC array of floats, where R is the number of randomizations (N/A for real data, number of bootstrap iterations for bootstrapped data), S is the number of samples per epoch, and C is the number of channels
+        Averaged EEG data over epochs (ERP) data for target events.
+    nontarget_erp_data : RxSxC array of floats, where R is the number of randomizations (N/A for real data, number of bootstrap iterations for bootstrapped data), S is the number of samples per epoch, and C is the number of channels
+        Averaged EEG data over epochs (ERP) data for nontarget events.
+
+    Returns
+    -------
+    erp_difference : RxSxC array of floats, 
+    target_erp_data : RxSxC array of floats, where R is the number of randomizations (N/A for real data, number of bootstrap iterations for bootstrapped data), S is the number of samples per epoch, and C is the number of channels
+        The absolute value of the difference between target and nontarget ERP data at each sample for each channel.
+
+    """
     
     erp_difference = abs(target_erp_data-nontarget_erp_data)
     
@@ -206,7 +223,7 @@ def calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, non
     """
     Description
     -----------
-    This function plots data 
+    This function uses the test statistics - the absolute value of the difference between target and nontarget ERP data, both resampled and real - to calculate p-values. Since p-values represent the proportion of bootstrapped statistics are greater than the real statistics, a count where this condition holds is divided by the number of randomizations performed. To effectively do this, the condition must be checked across each of the randomizations. The result is an array that contains a p-value at each sample for each channel.
 
     Parameters
     ----------
@@ -260,7 +277,8 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     """
     Description
     -----------
-
+    Correcting for false discovery rate implements a method that limits false positives being reported as significant. This effectively increases the p-values, potentially decreasing the significance observed in a sample of a given channel. This function employs false discovery rate correction to find where the data is potentially significant under stricter conditions. After the corrected p-values are found, their values are compared with the fdr_threshold value alpha (0.05 in this case); when the p-values are found to be lower than alpha, the sample point is deemed significant (for that given channel). These indices make up a sub-portion of erp_times, and a significant time can be obtained by indexing the significant index in erp_times. A black dot is plotted along the x-axis of a channel subplot on the sample time for each occasion of significance. An array where the sample times are significant in each channel is returned for future use in counting the number of subjects that experience significant differences at those times.
+    
     Parameters
     ----------
     eeg_epochs : ExSxC array of floats, where E is the number of epochs, S is the number of samples in each epoch, and C is the number of channels
@@ -296,7 +314,10 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     
     significant_times = [[] for _ in range(channel_count)]
     
-    # statistics calculated for given channel
+    # plot ERPs for events for each channel
+    figure, channel_plots = plt.subplots(3,3, figsize=(10, 6))
+    channel_plots[2][2].remove()  # only 8 channels, 9th plot unnecessary
+   
     for channel_index in range(channel_count):
         
         # calculate statistics for target ERPs
@@ -306,16 +327,6 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         # calculate statistics for nontarget ERPs
         nontarget_standard_deviation = np.std(eeg_epochs[~is_target_event,:,channel_index], axis=0) # standard deviation of EEG data for nontarget events at a given sample time point
         nontarget_standard_error = nontarget_standard_deviation / np.sqrt(nontarget_count) # standard error for nontargets
-    
-    # transpose the erp data to plot, matches average at that sample time to the size of the time array
-    target_erp_transpose = np.transpose(target_erp)
-    nontarget_erp_transpose = np.transpose(nontarget_erp)
-    
-    # plot ERPs for events for each channel
-    figure, channel_plots = plt.subplots(3,3, figsize=(10, 6))
-    channel_plots[2][2].remove()  # only 8 channels, 9th plot unnecessary
-   
-    for channel_index in range(channel_count):
         
         row_index, column_index = divmod(channel_index, 3)  # wrap around to column 0 for every 3 plots
         
@@ -326,25 +337,24 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         channel_plot.axhline(0, color='black', linestyle='dotted')
         
         # plot target and nontarget erp data in the subplot
-        target_handle, = channel_plot.plot(erp_times, target_erp_transpose[channel_index])
-        nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp_transpose[channel_index])
+        target_handle, = channel_plot.plot(erp_times, target_erp.T[channel_index])
+        nontarget_handle, = channel_plot.plot(erp_times, nontarget_erp.T[channel_index])
         
         # generate times to plot
         is_significant = np.array(np.where(corrected_p_values[0, :, channel_index] == 1)) # evaluate across all samples for a channel when  p_value < fdr_threshold is true
-        #significant_times = []
-        for significant_index in is_significant[0]:
-            #significant_times.append(erp_times[significant_index])
-            significant_times[channel_index].append(erp_times[significant_index])
+
+        for significant in is_significant[0]:
+            
+            significant_times[channel_index].append(erp_times[significant])
         significant_count = len(np.array(significant_times[channel_index]).T)
         
         # plot significant points
-        #significance_handle, = channel_plot.plot(significant_times, np.zeros(significant_count), 'ko', markersize=3)
         significance_handle, = channel_plot.plot(np.array(significant_times[channel_index]), np.zeros(significant_count), 'ko', markersize=3)
         
         # plot confidence intervals
-        target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp_transpose[channel_index] - 2 * target_standard_error, target_erp_transpose[channel_index] + 2 * target_standard_error, alpha=0.25)
+        target_confidence_interval_handle = channel_plot.fill_between(erp_times,target_erp.T[channel_index] - 2 * target_standard_error, target_erp.T[channel_index] + 2 * target_standard_error, alpha=0.25)
         
-        nontarget_confidence_interval_handle = channel_plot.fill_between(erp_times,nontarget_erp_transpose[channel_index] - 2 * nontarget_standard_error, nontarget_erp_transpose[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
+        nontarget_confidence_interval_handle = channel_plot.fill_between(erp_times,nontarget_erp.T[channel_index] - 2 * nontarget_standard_error, nontarget_erp.T[channel_index] + 2 * nontarget_standard_error, alpha=0.25)
         
         # workaround for legend to only display each entry once
         if channel_index == 0:
@@ -375,6 +385,7 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
     """
     Description
     -----------
+    This function loops through the functions defined above for each subject (with the exception of plot_confidence_intervals since plot_false_discovery_rate has very similar functionality in addition to adding significant points.) After each function is called, the number of subjects in which a given sample of a given channel exhibits significance is counted.  
 
     Parameters
     ----------
@@ -447,6 +458,7 @@ def plot_subject_significance(erp_times, subject_significance):
     """
     Description
     -----------
+    Using the data from the function above where the number of significant subjects in a given sample of a given channel is counted, a plot (for each channel) depicting these counts is generated. 
 
     Parameters
     ----------
@@ -461,7 +473,7 @@ def plot_subject_significance(erp_times, subject_significance):
 
     """
     
-    channel_count = len(subject_significance)
+    channel_count = len(subject_significance[1])
     
     figure, channel_plots = plt.subplots(3,3, figsize=(10, 6), sharey=True)
     
@@ -472,8 +484,8 @@ def plot_subject_significance(erp_times, subject_significance):
         row_index, column_index = divmod(channel_index, 3)  # wrap around to column 0 for every 3 plots
         
         channel_plot = channel_plots[row_index][column_index] # subplot
-        
-        channel_plot.plot(erp_times, subject_significance[channel_index])
+
+        channel_plot.plot(erp_times, subject_significance[1][channel_index])
         
         # label each plot's axes and channel number
         channel_plot.set_title(f'Channel {channel_index}')
