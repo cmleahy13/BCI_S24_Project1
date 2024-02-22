@@ -23,6 +23,9 @@ from plot_p300_data import load_erp_data, plot_confidence_intervals, bootstrap_e
 #%% Load data
 
 is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data() # default conditions
+print("shape of eeg_epochs:", eeg_epochs.shape)
+print("shape of target_erp:", target_erp.shape)
+print("shape of nontarget_erp:", nontarget_erp.shape)
 
 #%% Plot confidence intervals with standard error
 
@@ -51,7 +54,8 @@ for randomization_index in range(randomization_count): # perform 3000 randomizat
 # find test statistics
 bootstrapped_erp_difference = test_statistic(sampled_target_erp, sampled_nontarget_erp) # resampled data
 real_erp_difference = test_statistic(target_erp, nontarget_erp) # actual data
-
+print("shape of the array containing real_erp_differences:", real_erp_difference.shape)
+print("shape of the array containing bootstrapped_erp_differences:", bootstrapped_erp_difference.shape)
 # determine p_values
 p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp) # default conditions
 
@@ -65,10 +69,50 @@ significant_times = plot_false_discovery_rate(eeg_epochs, erp_times, target_erp,
 # perform the loop on relevant subjects
 subject_significance = multiple_subject_evaluation() # default conditions
 
+#%% Plotting subject significance
+
 # plot the number of subjects with significant sample time in a channel
 plot_subject_significance(erp_times, subject_significance)
 
 #%% Spatial map
 
 # generate scalp maps
-target_n2, target_p3b, nontarget_n2, nontarget_p3b = plot_spatial_map(eeg_epochs, is_target_event, erp_times)
+subjects = np.arange(3,6) # only plot maps for subjects 3, 4, 5
+plot_spatial_map(subjects) # not under default conditions
+
+#%% Printing out the docstrings of all functions
+# Part A: Docstring for Load and Epoch the Data
+print("Docstring for load_erp_data function:")
+print(load_erp_data.__doc__)
+
+# Part B: Docstring for Calculate & Plot Parametric Confidence Intervals
+print("\nDocstring for plot_confidence_intervals function:")
+print(plot_confidence_intervals.__doc__)
+
+# Part C: Docstring for Bootstrap P Values
+print("\nDocstring for bootstrap_erps function:")
+print(bootstrap_erps.__doc__)
+
+# Part D: Docstring for test_statistic function
+print("\nDocstring for test_statistic function:")
+print(test_statistic.__doc__)
+
+# Part E: Docstring for calculate P Values function
+print("\nDocstring for calculate_p_values function:")
+print(calculate_p_values.__doc__)
+
+# Part F: Docstring for Plot FDR-Corrected P Values
+print("\nDocstring for plot_false_discovery_rate function:")
+print(plot_false_discovery_rate.__doc__)
+
+# Part G: Docstring for multiple_subject_evaluation function
+print("Docstring for multiple_subject_evaluation function:")
+print(multiple_subject_evaluation.__doc__)
+
+# Part H: Docstring for plot_subject_significance function
+print("\nDocstring for plot_subject_significance function:")
+print(plot_subject_significance.__doc__)
+
+# Part I: Docstring for plot_spatial_map function
+print("\nDocstring for plot_spatial_map function:")
+print(plot_spatial_map.__doc__)
