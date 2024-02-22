@@ -27,8 +27,8 @@ from matplotlib import pyplot as plt
 from load_p300_data import load_training_eeg
 from plot_p300_erps import get_events, epoch_data, get_erps
 from mne.stats import fdr_correction
-from plot_topo import plot_topo
-
+from plot_topo import plot_topo, get_channel_names
+import itertools
 #%% Part A: Load and Epoch the Data
 
 def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0):
@@ -74,6 +74,7 @@ def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, 
     # calculate ERPs
     target_erp, nontarget_erp = get_erps(eeg_epochs, is_target_event) # get ERPs (mean EEG data)
     
+    
     return is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp
 
 #%% Part B: Calculate & Plot Parametric Confidence Intervals
@@ -109,6 +110,11 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     target_count = len(eeg_epochs[is_target_event])
     nontarget_count = len(eeg_epochs[~is_target_event])
     channel_count = eeg_epochs.shape[2]
+    
+    # Printing counts to make sure they are the numbers that we want 
+    print("shape of target_count to find the target_standard error:", target_count)
+    print("shape of target_count to find the nontarget_standard error:", nontarget_count)
+    print("channel_count for indexing and plotting the confidence intervals:", channel_count)
     
     # plot ERPs for events for each channel
     figure, channel_plots = plt.subplots(3,3, figsize=(10, 6))
@@ -163,6 +169,9 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     
     # save image
     plt.savefig(f'P300_S{subject}_channel_plots.png')
+    
+    
+    
 
 #%% Part C: Bootstrap P Values
 
@@ -193,6 +202,7 @@ def bootstrap_erps(eeg_epochs, is_target_event):
     
     # sample random indices for each channel separately
     random_indices = np.random.randint(event_count, size=event_count)
+   
     
     # randomly sampled EEG data
     eeg = eeg_epochs[random_indices]
@@ -264,6 +274,7 @@ def calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, non
     real_erp_difference = test_statistic(target_erp, nontarget_erp) # identify real test statistic, difference between the target_erp and nontarget_erp data 
     bootstrapped_erp_difference = test_statistic(sampled_target_erp, sampled_nontarget_erp) # identify bootsrapped test statistic, difference between the sampled target and nontarget data
     
+   
     # preallocate p-value array
     p_values = np.zeros([sample_count, channel_count])
     
@@ -357,7 +368,8 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
         
         # generate times to plot
         is_significant = np.array(np.where(corrected_p_values[0, :, channel_index] == 1)) # evaluate across all samples for a channel when  p_value < fdr_threshold
-
+    
+        
         for significant in is_significant[0]: # this index [0] is the boolean index
             
             significant_times[channel_index].append(erp_times[significant]) # add the list of significant time points (conversion obtained by indexing erp_times) to significant_times in the channel index
@@ -391,7 +403,7 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     
     # save image
     plt.savefig(f'P300_S{subject}_channel_plots_with_significance.png')  # save as image
-    
+    print("shape of the significant time points array:", np.array(significant_times).shape)
     return significant_times
 
 #%% Part E: Evaluate Across Subjects
@@ -468,6 +480,7 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
                     if significant_times[channel_index][significant_index] == erp_times[time_index]: # compare if the time matches the erp_times index
                         subject_significance[channel_index,time_index] = subject_significance[channel_index,time_index]+1 # if the times do match, add 1 each time a subject is significant for that channel's sample
                         
+
     return erp_times, subject_significance
 
 def plot_subject_significance(erp_times, subject_significance):
@@ -519,11 +532,35 @@ def plot_subject_significance(erp_times, subject_significance):
     # save image
     plt.savefig('subject_significance_channel_plots.png')  
         
+ 
 
 #%% Part F: Plot a Spatial Map
 
 def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(3,11), data_directory='P300Data/'):
+    
+    """
+    Description
+    -----------
+    This function plots spatial maps for the median target and nontarget ERPs (Event-Related Potentials)
+    across all subjects for N2 (200-300 ms) and P3b (300-500 ms) time ranges.
 
+    Parameters
+    ----------
+    eeg_epochs : ExSxC array of floats
+        EEG data from each channel at each event (epoch), where E is the number of epochs, S is the number of samples in each epoch, and C is the number of channels.
+    is_target_event : Ex1 Boolean array
+        Array indicating whether each event is a target (True) or nontarget (False).
+    erp_times : Sx1 array of floats
+        Array containing the times of each sample relative to the event onset in seconds.
+    subjects : array-like, optional
+        Subjects to include. Default is np.arange(3,11).
+    data_directory : str, optional
+        Directory where the ERP data is stored. Default is 'P300Data/'.
+
+    Returns
+    -------
+    None
+    """
     # declare lists for storing ERP data for each subject
     individual_median_erp_target = []
     individual_median_erp_nontarget = []    
@@ -544,7 +581,7 @@ def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(
     individual_median_erp_nontarget = np.array(individual_median_erp_nontarget)
     
     # print to observe shape of array
-    print(individual_median_erp_target.shape) # (subject_count, sample_count, channel_count)
+    print("The shape of the median ERP for individual subject:", individual_median_erp_target.shape) # (subject_count, sample_count, channel_count)
     
     # calculate group median ERPs
     group_median_erp_target = np.median(individual_median_erp_target, axis=0)
@@ -555,13 +592,13 @@ def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(
     
     n2_time_range = (0.2, 0.3)  # 200-300 ms
     n2_start_time, n2_end_time = n2_time_range
-    n2_start_index = np.argmin(np.abs(erp_times - n2_start_time))
-    n2_end_index = np.argmin(np.abs(erp_times - n2_end_time))
+    n2_start_index = np.argmin(np.abs(erp_times >= n2_start_time))
+    n2_end_index = np.argmin(np.abs(erp_times <= n2_end_time))
     
     p3b_time_range = (0.3, 0.5)  # 300-500 ms
     p3b_start_time, p3b_end_time = p3b_time_range
-    p3b_start_index = np.argmin(np.abs(erp_times - p3b_start_time))
-    p3b_end_index = np.argmin(np.abs(erp_times - p3b_end_time))
+    p3b_start_index = np.argmin(np.abs(erp_times >= p3b_start_time))
+    p3b_end_index = np.argmin(np.abs(erp_times <= p3b_end_time))
     
     # extract target and nontarget ERPs for N2 and P3b time ranges
     target_n2 = group_median_erp_target[n2_start_index:n2_end_index,:]
@@ -573,23 +610,26 @@ def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(
     # make channel array to edit order once
     #channel_array = ['P7', 'P8','Oz','P3','Cz', 'Pz', 'P4','Fz']
     #channel_array = ['Oz','P7', 'P8','P3','Cz', 'Pz', 'P4','Fz']
-    channel_array = ['Fz','Cz','P3','Pz','P4','P7','Oz','P8']
-    
+    #channel_array = ['Fz','Cz','P3','Pz','P4','P7','Oz','P8']
+    # *channel_array = ['Oz','P7','P4','Pz','P3','Cz','Fz','P8']
+    #channel_array = ['Pz','P3','Cz','Fz','P8','Oz','P7','P4']
+    # 2: channel_array = ['Fz','Cz','P3','Pz','P4','P7','Oz','P8']
+    channel_array = ['P3','Fz','Cz','P4','Pz','P8','Oz','P7']
     # plot and save topomaps for N2 and P3b time ranges
-    # plt.figure(figsize=(10, 6))
-    # plot_topo(channel_array, channel_data=target_n2.T, title='Group Median Target N2', montage_name='standard_1020')
-    # plt.savefig('target_n2_topomap.png') 
+    plt.figure(figsize=(10, 6))
+    plot_topo(channel_array, channel_data=target_n2.T, title='Group Median Target N2', montage_name='standard_1020')
+    plt.savefig('target_n2_topomap.png') 
     
     plt.figure(figsize=(10, 6))
     plot_topo(channel_array, channel_data=nontarget_n2.T, title='Group Median Nontarget N2')
     plt.savefig('nontarget_n2_topomap.png') 
+        
+    plt.figure(figsize=(10, 6))
+    plot_topo(channel_array, channel_data=target_p3b.T, title='Group Median Target P3b')
+    plt.savefig('target_p3b_topomap.png') 
     
-    # plt.figure(figsize=(10, 6))
-    # plot_topo(channel_array, channel_data=target_p3b.T, title='Group Median Target P3b')
-    # plt.savefig('target_p3b_topomap.png') 
+    plt.figure(figsize=(10, 6))
+    plot_topo(channel_array, channel_data=nontarget_p3b.T, title='Group Median Nontarget P3b')
+    plt.savefig('nontarget_p3b_topomap.png') 
     
-    # plt.figure(figsize=(10, 6))
-    # plot_topo(channel_array, channel_data=nontarget_p3b.T, title='Group Median Nontarget P3b')
-    # plt.savefig('nontarget_p3b_topomap.png') 
-    
-    return target_n2, target_p3b, nontarget_n2, nontarget_p3b
+    return None
