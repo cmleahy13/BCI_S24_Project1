@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from load_p300_data import load_training_eeg
 from plot_p300_erps import get_events, epoch_data, get_erps, plot_erps
 from mne.stats import fdr_correction
-import plot_topo
+from plot_topo import plot_topo,get_channel_names
 
 #%% Part A: Load and Epoch the Data
 
@@ -262,7 +262,52 @@ fdr(erp_times, target_erp, nontarget_erp, p_values, fdr_threshold = 0.05)
 
 # returns:
     # none?
+<<<<<<< Updated upstream
     
+=======
+
+def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000):
+    combined_eeg =[]
+    is_target_combined = []
+    for subject in subjects:
+        
+        # loading data
+        is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject, data_directory, epoch_start_time, epoch_end_time)
+        
+        # bootstrapping
+        # declare necessary variables
+        sample_count = eeg_epochs.shape[1]
+        channel_count = eeg_epochs.shape[2]
+
+        # preallocate arrays for resampled data 
+        sampled_target_erp = np.zeros([randomization_count,sample_count,channel_count])
+        sampled_nontarget_erp = np.zeros([randomization_count,sample_count,channel_count])
+        combined_eeg.append(eeg_epochs)
+        is_target_combined.append(is_target_event)
+        # perform the bootstrapping
+        """for randomization_index in range(randomization_count):
+                
+            # resample targets
+            sampled_target_erp[randomization_index,:] = bootstrap_erps(eeg_epochs, is_target_event)[0][:,:]
+            
+            # resample nontargets
+            sampled_nontarget_erp[randomization_index,:] = bootstrap_erps(eeg_epochs, is_target_event)[1][:,:]
+            
+        # find p_values
+        p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp,randomization_count=3000)
+        
+        # FDR correction and plotting
+        plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject, fdr_threshold = 0.05)
+        
+        # declare an array of zeros to determine significance
+        # track number of subjects where a point in time is significant for each channel
+        # do this with boolean indexing: true if the sample in time for that subject and channel is significant
+        # use np.sum to track total, likely want (384,8) array
+        # return the sum, take into next function"""
+            
+    return combined_eeg,is_target_combined
+#def subject_significance_plots():
+>>>>>>> Stashed changes
 
 #%% Part F: Plot a Spatial Map
 
@@ -277,3 +322,63 @@ fdr(erp_times, target_erp, nontarget_erp, p_values, fdr_threshold = 0.05)
 # inputs:
 
 # returns:
+<<<<<<< Updated upstream
+=======
+# Function to compute group median ERP
+def compute_group_median(eeg_epochs, is_target_event):
+    target_median = np.median(eeg_epochs[is_target_event], axis=0)
+    nontarget_median = np.median(eeg_epochs[~is_target_event], axis=0)
+    return target_median, nontarget_median
+
+channel_names = get_channel_names(montage_name='biosemi64')
+
+
+def plot_spatial_map(eeg_epochs, is_target_event,erp_times,combined_eeg, is_target_combined, subject=3):
+    
+    combined_eeg = np.array(combined_eeg)
+    is_target_combined = np.array(is_target_combined)
+    print(is_target_combined.shape)
+    combined_erp_target = np.mean(combined_eeg[is_target_combined],axis = 0)
+    combined_erp_nontarget = np.mean(combined_eeg[~is_target_combined],axis = 0)
+    
+    median_target_erp = np.median(combined_erp_target,axis=(0,1))
+    median_nontarget_erp = np.median(combined_erp_nontarget, axis=(0,1))
+    
+    n2_time_range = (0.2, 0.3)  # 200-300 ms
+    p3b_time_range = (0.3, 0.5)  # 300-500 ms
+    n2_start_time, n2_end_time = n2_time_range
+    n2_start_index = np.where(erp_times == n2_start_time)[0][0]
+    n2_end_index = np.where(erp_times == n2_end_time)[0][0]
+    
+    
+    # Extract voltage data for N2 time range
+    target_median_n2 = target_median[:, n2_start_index:n2_end_index]
+    nontarget_median_n2 = nontarget_median[:, n2_start_index:n2_end_index]
+    
+    # Plot topomap for N2 time range
+    plt.figure(figsize=(10, 6))
+    plot_topo(channel_names=channel_names, channel_data=target_median_n2, title='Target Median N2')
+    plt.figure(figsize=(10, 6))
+    plot_topo(channel_names=channel_names, channel_data=nontarget_median_n2, title='Nontarget Median N2')
+    
+    # Similarly, plot topomap for P3b time range
+    # Assuming you have the P3b time range defined as p3b_start_time and p3b_end_time
+    p3b_start_time, p3b_end_time = p3b_time_range
+    p3b_start_index = np.where(erp_times == p3b_start_time)[0][0]
+    p3b_end_index = np.where(erp_times == p3b_end_time)[0][0]
+
+    # Extract voltage data for P3b time range
+    target_median_p3b = target_median[:, p3b_start_index:p3b_end_index]
+    nontarget_median_p3b = nontarget_median[:, p3b_start_index:p3b_end_index]
+    
+    # Plot topomap for P3b time range
+    plt.figure(figsize=(10, 6))
+    plot_topo(channel_names=channel_names, channel_data=target_median_p3b, title='Target Median P3b')
+    plt.figure(figsize=(10, 6))
+    plot_topo(channel_names=channel_names, channel_data=nontarget_median_p3b, title='Nontarget Median P3b')
+    
+    plt.show()
+    plot_topo.plot_topo(['Fz', 'Cz', 'P3', 'Pz', 'P4', 'P7', 'P8', 'Oz'], median_target_erp, f'Subject{subject} P300 Spatial Map');
+    
+        
+>>>>>>> Stashed changes
