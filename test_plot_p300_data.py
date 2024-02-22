@@ -71,4 +71,4 @@ plot_subject_significance(erp_times, subject_significance)
 #%% Spatial map
 
 # generate scalp maps
-plot_spatial_map(eeg_epochs, is_target_event, erp_times)
+target_n2, target_p3b, nontarget_n2, nontarget_p3b = plot_spatial_map(eeg_epochs, is_target_event, erp_times)
