@@ -571,23 +571,25 @@ def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(
     nontarget_p3b = group_median_erp_nontarget[p3b_start_index:p3b_end_index,:]
    
     # make channel array to edit order once
-    channel_array = ['P7', 'P8','Oz','P3','Cz', 'Pz', 'P4','Fz']
+    #channel_array = ['P7', 'P8','Oz','P3','Cz', 'Pz', 'P4','Fz']
+    #channel_array = ['Oz','P7', 'P8','P3','Cz', 'Pz', 'P4','Fz']
+    channel_array = ['Fz','Cz','P3','Pz','P4','P7','Oz','P8']
     
     # plot and save topomaps for N2 and P3b time ranges
-    plt.figure(figsize=(10, 6))
-    plot_topo(channel_array, channel_data=target_n2.T, title='Group Median Target N2', montage_name='standard_1020')
-    plt.savefig('target_n2_topomap.png') 
+    # plt.figure(figsize=(10, 6))
+    # plot_topo(channel_array, channel_data=target_n2.T, title='Group Median Target N2', montage_name='standard_1020')
+    # plt.savefig('target_n2_topomap.png') 
     
     plt.figure(figsize=(10, 6))
     plot_topo(channel_array, channel_data=nontarget_n2.T, title='Group Median Nontarget N2')
     plt.savefig('nontarget_n2_topomap.png') 
     
-    plt.figure(figsize=(10, 6))
-    plot_topo(channel_array, channel_data=target_p3b.T, title='Group Median Target P3b')
-    plt.savefig('target_p3b_topomap.png') 
+    # plt.figure(figsize=(10, 6))
+    # plot_topo(channel_array, channel_data=target_p3b.T, title='Group Median Target P3b')
+    # plt.savefig('target_p3b_topomap.png') 
     
-    plt.figure(figsize=(10, 6))
-    plot_topo(channel_array, channel_data=nontarget_p3b.T, title='Group Median Nontarget P3b')
-    plt.savefig('nontarget_p3b_topomap.png') 
+    # plt.figure(figsize=(10, 6))
+    # plot_topo(channel_array, channel_data=nontarget_p3b.T, title='Group Median Nontarget P3b')
+    # plt.savefig('nontarget_p3b_topomap.png') 
     
     return target_n2, target_p3b, nontarget_n2, nontarget_p3b
