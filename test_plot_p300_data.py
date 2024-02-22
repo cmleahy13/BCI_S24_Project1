@@ -17,7 +17,7 @@ is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_dat
 
 #%% Plot confidence intervals standard error
 
-plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp, is_target_event)
+plot_confidence_intervals(eeg_epochs,erp_times, target_erp, nontarget_erp, is_target_event, subject=3)
 
 #%% Bootstrapping
 
@@ -57,4 +57,4 @@ plot_subject_significance(erp_times, subject_significance)
 
 #%% Spatial map
 
-#plot_spatial_map(eeg_epochs, is_target_event, subject=3)
+plot_spatial_map(eeg_epochs, is_target_event, erp_times)

@@ -17,11 +17,40 @@ from matplotlib import pyplot as plt
 from load_p300_data import load_training_eeg
 from plot_p300_erps import get_events, epoch_data, get_erps
 from mne.stats import fdr_correction
-import plot_topo
+from plot_topo import plot_topo
 
 #%% Part A: Load and Epoch the Data
 
 def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, epoch_end_time=1.0):
+    """
+    Description
+    -----------
+
+    Parameters
+    ----------
+    subject : int, optional
+        Input to define the subject to be evaluated. The default is 3.
+    data_directory : str, optional
+        Input string directory to the location of the data files. The default is 'P300Data/'.
+    epoch_start_time : float, optional
+        Beginning of relative range to collect samples around an event, in seconds. The default is -0.5.
+    epoch_end_time : float, optional
+        Ending of relative range to collect samples around an event, in seconds. The default is 1.0.
+
+    Returns
+    -------
+    is_target_event : Ex1 Boolean array, where E is the number of samples in which an event occurred
+        Array holding truth data pertaining to whether each event that occurred was a target (True) or nontarget (False).
+    eeg_epochs : ExSxC array of floats, where E is the number of epochs, S is the number of samples in each epoch, and C is the number of channels
+        Array containing the sample EEG data from each channel that occurs at each event (epoch).
+    erp_times : Sx1 array of floats, where S is the number of samples in each epoch
+        Array containing the times of each sample relative to the event onset in seconds.
+    target_erp : SxC array of floats, where S is the number of samples in each epoch, and C is the number of channels
+        Array containing mean EEG data at each sample point in time for each channel for epochs that constitute targets.
+    nontarget_erp : SxC array of floats, where S is the number of samples in each epoch, and C is the number of channels
+        Array containing mean EEG data at each sample point in time for each channel for epochs that constitute nontargets.
+
+    """
     
     # load in training data
     eeg_time, eeg_data, rowcol_id, is_target = load_training_eeg(subject, data_directory)
@@ -39,6 +68,30 @@ def load_erp_data(subject=3, data_directory='P300Data/', epoch_start_time=-0.5, 
 #%% Part B: Calculate & Plot Parametric Confidence Intervals
 
 def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, subject=3):
+    """
+    Description
+    -----------
+
+    Parameters
+    ----------
+    eeg_epochs : ExSxC array of floats, where E is the number of epochs, S is the number of samples in each epoch, and C is the number of channels
+        Array containing the sample EEG data from each channel that occurs at each event (epoch).
+    erp_times : Sx1 array of floats, where S is the number of samples in each epoch
+        Array containing the times of each sample relative to the event onset in seconds.
+    target_erp : SxC array of floats, where S is the number of samples in each epoch, and C is the number of channels
+        Array containing mean EEG data at each sample point in time for each channel for epochs that constitute targets.
+    nontarget_erp : SxC array of floats, where S is the number of samples in each epoch, and C is the number of channels
+        Array containing mean EEG data at each sample point in time for each channel for epochs that constitute nontargets.
+    is_target_event : Ex1 Boolean array, where E is the number of samples in which an event occurred
+        Array holding truth data pertaining to whether each event that occurred was a target (True) or nontarget (False).
+    subject : int, optional
+        Input to define the subject to be evaluated. The default is 3.
+
+    Returns
+    -------
+    None.
+
+    """
     
     # identify necessary counts
     target_count = len(eeg_epochs[is_target_event])
@@ -108,6 +161,25 @@ def plot_confidence_intervals(eeg_epochs, erp_times, target_erp, nontarget_erp, 
 #%% Part C: Bootstrap P Values
 
 def bootstrap_erps(eeg_epochs, is_target_event):
+    """
+    Description
+    -----------
+
+    Parameters
+    ----------
+    eeg_epochs : ExSxC array of floats, where E is the number of epochs, S is the number of samples in each epoch, and C is the number of channels
+        Array containing the sample EEG data from each channel that occurs at each event (epoch).
+    is_target_event : Ex1 Boolean array, where E is the number of samples in which an event occurred
+        Array holding truth data pertaining to whether each event that occurred was a target (True) or nontarget (False).
+
+    Returns
+    -------
+    sampled_target_erp : RxSxC array of floats, where R is the number of randomizations, S is the number of samples per epoch, and C is the number of channels
+        Array containing the bootstrapped iterations for target indices (not inherently target data due to resampling).
+    sampled_nontarget_erp : RxSxC array of floats, where R is the number of randomizations, S is the number of samples per epoch, and C is the number of channels
+        Array containing the bootstrapped iterations for nontarget indices (not inherently nontarget data due to resampling).
+
+    """
     
     event_count = eeg_epochs.shape[0]
     
@@ -129,6 +201,29 @@ def test_statistic(target_erp_data, nontarget_erp_data):
 
 
 def calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp,randomization_count=3000):
+    """
+    Description
+    -----------
+
+    Parameters
+    ----------
+    sampled_target_erp : RxSxC array of floats, where R is the number of randomizations, S is the number of samples per epoch, and C is the number of channels
+        Array containing the bootstrapped iterations for target indices (not inherently target data due to resampling).
+    sampled_nontarget_erp : RxSxC array of floats, where R is the number of randomizations, S is the number of samples per epoch, and C is the number of channels
+        Array containing the bootstrapped iterations for nontarget indices (not inherently nontarget data due to resampling).
+    target_erp : SxC array of floats, where S is the number of samples in each epoch, and C is the number of channels
+        Array containing mean EEG data at each sample point in time for each channel for epochs that constitute targets.
+    nontarget_erp : SxC array of floats, where S is the number of samples in each epoch, and C is the number of channels
+        Array containing mean EEG data at each sample point in time for each channel for epochs that constitute nontargets.
+    randomization_count : int, optional
+        The number of times the bootstrapping procedure is performed. The default is 3000.
+
+    Returns
+    -------
+    p_values : SxC array of floats, where S is the number of samples per epoch and C is the number of channels
+        Array containing p-values based on the test statistic calculated for the real data and the bootstrapped data.
+
+    """
     
     sample_count = sampled_target_erp.shape[1]  # number of samples
     channel_count = sampled_target_erp.shape[2]  # number of channels
@@ -159,6 +254,35 @@ def calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, non
 #%% Part D: Plot FDR-Corrected P Values
 
 def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject=3, fdr_threshold=0.05):
+    """
+    Description
+    -----------
+
+    Parameters
+    ----------
+    eeg_epochs : ExSxC array of floats, where E is the number of epochs, S is the number of samples in each epoch, and C is the number of channels
+        Array containing the sample EEG data from each channel that occurs at each event (epoch).
+    erp_times : Sx1 array of floats, where S is the number of samples in each epoch
+        Array containing the times of each sample relative to the event onset in seconds.
+    target_erp : SxC array of floats, where S is the number of samples in each epoch, and C is the number of channels
+        Array containing mean EEG data at each sample point in time for each channel for epochs that constitute targets.
+    nontarget_erp : SxC array of floats, where S is the number of samples in each epoch, and C is the number of channels
+        Array containing mean EEG data at each sample point in time for each channel for epochs that constitute nontargets.
+    is_target_event : Ex1 Boolean array, where E is the number of samples in which an event occurred
+        Array holding truth data pertaining to whether each event that occurred was a target (True) or nontarget (False).
+    p_values : SxC array of floats, where S is the number of samples per epoch and C is the number of channels
+        Array containing p-values based on the test statistic calculated for the real data and the bootstrapped data.
+    subject : int, optional
+        Input to define the subject to be evaluated. The default is 3.
+    fdr_threshold : float, optional
+        The value of alpha used as the threshold value to determine signficance. The default is 0.05.
+
+    Returns
+    -------
+    significant_times : list of size C, where C is the number of channels
+        List of arrays containing time points relative to event onset where the p-value was lower than fdr_threshold for a given subject where. The array within each channel is size Sx1, where S is the number of samples that are significant for that channel.
+
+    """
     
     # identify necessary counts
     target_count = len(eeg_epochs[is_target_event])
@@ -244,19 +368,38 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
 
 #%% Part E: Evaluate Across Subjects
 
-# function goals:
-    # loop through above code on subjects 3-10
-    # save different image file for each
-    # record time channels/time points that pass FDR-corrected significance threshold
-    # make/save new subplots (for each channel) to show number of subjects that passed significance threshold at each time point and channel
-    
-# inputs:
-    # subject array (optional), default array np.arange(3,11)
-
-# returns:
-    # none?
-
 def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Data/', sample_count=384, channel_count=8, epoch_start_time=-0.5, epoch_end_time=1.0, randomization_count=3000, fdr_threshold=0.05):
+    """
+    Description
+    -----------
+
+    Parameters
+    ----------
+    subjects : Px1 array of integers, where P is the subject number, optional
+        Array containing the subject numbers to evaluate. The default is np.arange(3,11).
+    data_directory : str, optional
+        Input string directory to the location of the data files. The default is 'P300Data/'.
+    sample_count : int, optional
+        The number of samples per epoch, taken as an argument due to necessary use before dynamic coding possible. The default is 384.
+    channel_count : int, optional
+        The number of channels, taken as an argument due to necessary use before dynamic coding possible. The default is 8.
+    epoch_start_time : float, optional
+        Beginning of relative range to collect samples around an event, in seconds. The default is -0.5.
+    epoch_end_time : float, optional
+        Ending of relative range to collect samples around an event, in seconds. The default is 1.0.
+    randomization_count : int, optional
+        The number of times the bootstrapping procedure is performed. The default is 3000.
+    fdr_threshold : float, optional
+        The value of alpha used as the threshold value to determine signficance. The default is 0.05.
+        
+    Returns
+    -------
+    erp_times : Sx1 array of floats, where S is the number of samples in each epoch
+        Array containing the times of each sample relative to the event onset in seconds.
+    subject_significance : CxS array of floats, where C is the number of channels and S is the number of samples per epoch
+        Array containing the number of subjects that possess statistically significant data (the corrected p-value is less than the fdr_threshold value) for each sample in each channel.
+
+    """
     
     # preallocate array for editing with each subject
     # set to empty list since necessary inputs obtained in subject loop for dynamic variables
@@ -288,20 +431,7 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
         # FDR correction and plotting
         significant_times = plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, is_target_event, p_values, subject, fdr_threshold)
         
-        # track number of subjects where a point in time is significant for each channel
-        # do this with boolean indexing: true if the sample in time for that subject and channel is significant
-        # use np.sum to track total, likely want (384,8) array
-        # return the sum, take into next function
-        
-        # for significant_index in is_significant[0]:
-        #     significant_times.append(erp_times[significant_index])
-        # significant_count = len(np.array(significant_times))
-        
-        # add 1 to count at a sample index if a subject has a value for that time
-        # for a time in erp_times
-            # if that time is also in significant times
-                # add 1 to that time point in subject_significance
-        
+        # counting the number of subjects that are significant for a given sample on a given channel
         for time_index in range(sample_count):
             for channel_index in range(channel_count):
                 for i in range(len(significant_times[channel_index])):
@@ -309,9 +439,24 @@ def multiple_subject_evaluation(subjects=np.arange(3,11), data_directory='P300Da
                         subject_significance[channel_index,time_index] = subject_significance[channel_index,time_index]+1
                         
     return erp_times, subject_significance
-            
 
 def plot_subject_significance(erp_times, subject_significance):
+    """
+    Description
+    -----------
+
+    Parameters
+    ----------
+    erp_times : Sx1 array of floats, where S is the number of samples in each epoch
+        Array containing the times of each sample relative to the event onset in seconds.
+    subject_significance : CxS array of floats, where C is the number of channels and S is the number of samples per epoch
+        Array containing the number of subjects that possess statistically significant data (the corrected p-value is less than the fdr_threshold value) for each sample in each channel.
+        
+    Returns
+    -------
+    None.
+
+    """
     
     channel_count = len(subject_significance)
     
@@ -343,23 +488,42 @@ def plot_subject_significance(erp_times, subject_significance):
 
 #%% Part F: Plot a Spatial Map
 
-# function goals:
-    # get group median ERP across all trials 
-    # get subject median ERP across all trials
-    # assign channels spatial location
-    # use spatial location assignments as input to plot_topo.plot_topo() function
-    # use above function to plot spatial distribution of median voltages in N2 time range (one plot) and P3b time range (second plot)
-    # adjust channel name order to obtain reasonable output
+def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(3,11), data_directory='P300Data/'):
 
-# inputs:
+    individual_erp_target = []
+    individual_erp_nontarget = []    
+    for subject in subjects:
+        is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject, data_directory,  epoch_start_time=-0.5, epoch_end_time=1.0)
+ 
+        individual_erp_target.append(target_erp)
+        individual_erp_nontarget.append(nontarget_erp)
 
-# returns:
-    
-def plot_spatial_map(eeg_epochs, is_target_event, subject=3):
-    
-    median_target_erp = np.median(eeg_epochs[is_target_event], axis=(0,1))
-    median_nontarget_erp = np.median(eeg_epochs[~is_target_event], axis=(0,1))
-    
-    plot_topo.plot_topo(['Fz', 'Cz', 'P3', 'Pz', 'P4', 'P7', 'P8', 'Oz'], median_target_erp, f'Subject{subject} P300 Spatial Map');
-    
-        
+    individual_erp_target = np.array(individual_erp_target)
+    individual_erp_nontarget = np.array(individual_erp_nontarget)
+    print(individual_erp_target.shape)
+
+    group_median_erp_target = np.median(individual_erp_target, axis=0)
+    group_median_erp_nontarget = np.median(individual_erp_nontarget, axis=0)
+    erp_times = np.array(erp_times)
+    n2_time_range = (0.2, 0.3)  # 200-300 ms
+    p3b_time_range = (0.3, 0.5)  # 300-500 ms
+    n2_start_time, n2_end_time = n2_time_range
+    p3b_start_time, p3b_end_time = p3b_time_range
+    n2_start_index = np.argmin(np.abs(erp_times - n2_start_time))
+    n2_end_index = np.argmin(np.abs(erp_times - n2_end_time))
+    p3b_start_index = np.argmin(np.abs(erp_times - p3b_start_time))
+    p3b_end_index = np.argmin(np.abs(erp_times - p3b_end_time))
+    # Extract target and nontarget ERPs for N2 and P3b time ranges
+    target_n2 = group_median_erp_target[:, n2_start_index:n2_end_index]
+    target_p3b = group_median_erp_target[:, p3b_start_index:p3b_end_index]
+    nontarget_n2 = group_median_erp_nontarget[:, n2_start_index:n2_end_index]
+    nontarget_p3b = group_median_erp_nontarget[:, p3b_start_index:p3b_end_index]
+   # Plot topomaps for N2 and P3b time ranges
+    plt.figure(figsize=(10, 6))
+    plot_topo(['Fz', 'Cz', 'P3', 'Pz', 'P4', 'P7', 'P8', 'Oz'], channel_data=target_n2.T, title='Group Median Target N2', montage_name='standard_1020')
+    plt.figure(figsize=(10, 6))
+    plot_topo(['Fz', 'Cz', 'P3', 'Pz', 'P4', 'P7', 'P8', 'Oz'], channel_data=nontarget_n2.T, title='Group Median Nontarget N2')
+    plt.figure(figsize=(10, 6))
+    plot_topo(['Fz', 'Cz', 'P3', 'Pz', 'P4', 'P7', 'P8', 'Oz'], channel_data=target_p3b.T, title='Group Median Target P3b')
+    plt.figure(figsize=(10, 6))
+    plot_topo(['Fz', 'Cz', 'P3', 'Pz', 'P4', 'P7', 'P8', 'Oz'], channel_data=nontarget_p3b.T, title='Group Median Nontarget P3b')
