@@ -403,7 +403,6 @@ def plot_false_discovery_rate(eeg_epochs, erp_times, target_erp, nontarget_erp, 
     
     # save image
     plt.savefig(f'P300_S{subject}_channel_plots_with_significance.png')  # save as image
-    print("shape of the significant time points array:", np.array(significant_times).shape)
     return significant_times
 
 #%% Part E: Evaluate Across Subjects
@@ -564,7 +563,54 @@ def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(
     # declare lists for storing ERP data for each subject
     individual_median_erp_target = []
     individual_median_erp_nontarget = []    
-    
+    # convert erp_times to an array
+    #erp_times = np.array(erp_times)
+    for subject in np.arange(4,6):
+        
+        # load the erp data for each subject
+        is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject, data_directory,  epoch_start_time=-0.5, epoch_end_time=1.0)
+        median_target_eeg = np.median(eeg_epochs[is_target_event], axis=0)
+        median_nontarget_eeg = np.median(eeg_epochs[~is_target_event], axis=0)
+        erp_times = np.array(erp_times)
+        n2_time_range = (0.2, 0.3)  # 200-300 ms
+        n2_start_time, n2_end_time = n2_time_range
+        n2_start_index = np.where(erp_times >= n2_start_time)[0][0]
+        n2_end_index = np.where(erp_times<=n2_end_time)[0][-1]
+        
+        p3b_time_range = (0.3, 0.5)  # 300-500 ms
+        p3b_start_time, p3b_end_time = p3b_time_range
+        p3b_start_index = np.where(erp_times >=p3b_start_time)[0][0]
+        p3b_end_index = np.where(erp_times <= p3b_end_time)[0][-1]
+        
+        # extract target and nontarget ERPs for N2 and P3b time ranges
+        target_n2 = median_target_eeg[n2_start_index:n2_end_index +1,:]
+        target_p3b = median_target_eeg[p3b_start_index:p3b_end_index + 1,:]
+        
+        nontarget_n2 = median_nontarget_eeg[n2_start_index:n2_end_index +1,:]
+        nontarget_p3b = median_nontarget_eeg[p3b_start_index:p3b_end_index +1,:]
+       
+        # make channel array to edit order once 
+        channel_array = ['P4','Pz','Cz','Fz','P8','Oz','P3','P7']        
+       
+        # plot and save topomaps for N2 and P3b time ranges
+        plt.figure(figsize=(10, 6))
+        plot_topo(channel_array, channel_data=target_n2.T, title='Group Median Target N2', montage_name='standard_1020')
+        plt.savefig(f'target_n2_topomap_subject_{subject}.png') 
+        
+        plt.figure(figsize=(10, 6))
+        plot_topo(channel_array, channel_data=nontarget_n2.T, title='Group Median Nontarget N2')
+        plt.savefig(f'nontarget_n2_topomap_subject_{subject}.png') 
+            
+        plt.figure(figsize=(10, 6))
+        plot_topo(channel_array, channel_data=target_p3b.T, title='Group Median Target P3b')
+        plt.savefig(f'target_p3b_topomap_subject_{subject}.png') 
+        
+        plt.figure(figsize=(10, 6))
+        plot_topo(channel_array, channel_data=nontarget_p3b.T, title='Group Median Nontarget P3b')
+        plt.savefig(f'nontarget_p3b_topomap_subject_{subject}.png') 
+            
+
+
     # find individual median ERP data
     for subject in subjects: # for each subject
         
@@ -572,10 +618,10 @@ def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(
         is_target_event, eeg_epochs, erp_times, target_erp, nontarget_erp = load_erp_data(subject, data_directory,  epoch_start_time=-0.5, epoch_end_time=1.0)
  
         # add the median ERP data for the subject to the list
-        individual_median_erp_target.append(np.median(eeg_epochs[is_target_event], axis=0))
+        individual_median_erp_target.append(np.median(eeg_epochs[is_target_event],axis = 0))
         
-        individual_median_erp_nontarget.append(np.median(eeg_epochs[~is_target_event], axis=0))
-    
+        individual_median_erp_nontarget.append(np.median(eeg_epochs[~is_target_event],axis =0))
+    erp_times = np.array(erp_times)
     # convert from list to array
     individual_median_erp_target = np.array(individual_median_erp_target)
     individual_median_erp_nontarget = np.array(individual_median_erp_nontarget)
@@ -586,35 +632,29 @@ def plot_spatial_map(eeg_epochs, is_target_event, erp_times, subjects=np.arange(
     # calculate group median ERPs
     group_median_erp_target = np.median(individual_median_erp_target, axis=0)
     group_median_erp_nontarget = np.median(individual_median_erp_nontarget, axis=0)
-    
+   
     # get time ranges
-    erp_times = np.array(erp_times) # convert erp_times to an array
+    
     
     n2_time_range = (0.2, 0.3)  # 200-300 ms
     n2_start_time, n2_end_time = n2_time_range
-    n2_start_index = np.argmin(np.abs(erp_times >= n2_start_time))
-    n2_end_index = np.argmin(np.abs(erp_times <= n2_end_time))
+    n2_start_index = np.where(erp_times >= n2_start_time)[0][0]
+    n2_end_index = np.where(erp_times<=n2_end_time)[0][-1]
     
     p3b_time_range = (0.3, 0.5)  # 300-500 ms
     p3b_start_time, p3b_end_time = p3b_time_range
-    p3b_start_index = np.argmin(np.abs(erp_times >= p3b_start_time))
-    p3b_end_index = np.argmin(np.abs(erp_times <= p3b_end_time))
+    p3b_start_index = np.where(erp_times >=p3b_start_time)[0][0]
+    p3b_end_index = np.where(erp_times <= p3b_end_time)[0][-1]
     
     # extract target and nontarget ERPs for N2 and P3b time ranges
-    target_n2 = group_median_erp_target[n2_start_index:n2_end_index,:]
-    target_p3b = group_median_erp_target[p3b_start_index:p3b_end_index,:]
+    target_n2 = group_median_erp_target[n2_start_index:n2_end_index +1,:]
+    target_p3b = group_median_erp_target[p3b_start_index:p3b_end_index + 1,:]
     
-    nontarget_n2 = group_median_erp_nontarget[n2_start_index:n2_end_index,:]
-    nontarget_p3b = group_median_erp_nontarget[p3b_start_index:p3b_end_index,:]
+    nontarget_n2 = group_median_erp_nontarget[n2_start_index:n2_end_index +1,:]
+    nontarget_p3b = group_median_erp_nontarget[p3b_start_index:p3b_end_index +1,:]
    
     # make channel array to edit order once
-    #channel_array = ['P7', 'P8','Oz','P3','Cz', 'Pz', 'P4','Fz']
-    #channel_array = ['Oz','P7', 'P8','P3','Cz', 'Pz', 'P4','Fz']
-    #channel_array = ['Fz','Cz','P3','Pz','P4','P7','Oz','P8']
-    # *channel_array = ['Oz','P7','P4','Pz','P3','Cz','Fz','P8']
-    #channel_array = ['Pz','P3','Cz','Fz','P8','Oz','P7','P4']
-    # 2: channel_array = ['Fz','Cz','P3','Pz','P4','P7','Oz','P8']
-    channel_array = ['P3','Fz','Cz','P4','Pz','P8','Oz','P7']
+    channel_array = ['P4','Pz','Cz','Fz','P8','Oz','P3','P7']
     # plot and save topomaps for N2 and P3b time ranges
     plt.figure(figsize=(10, 6))
     plot_topo(channel_array, channel_data=target_n2.T, title='Group Median Target N2', montage_name='standard_1020')

@@ -54,8 +54,8 @@ for randomization_index in range(randomization_count): # perform 3000 randomizat
 # find test statistics
 bootstrapped_erp_difference = test_statistic(sampled_target_erp, sampled_nontarget_erp) # resampled data
 real_erp_difference = test_statistic(target_erp, nontarget_erp) # actual data
-print("real_erp_difference shape:", real_erp_difference.shape)
-print("bootstrapped_erp_difference shape:", bootstrapped_erp_difference.shape)
+print("shape of the array containing real_erp_differences:", real_erp_difference.shape)
+print("shape of the array containing bootstrapped_erp_differences:", bootstrapped_erp_difference.shape)
 # determine p_values
 p_values = calculate_p_values(sampled_target_erp, sampled_nontarget_erp,target_erp, nontarget_erp) # default conditions
 
@@ -68,8 +68,7 @@ significant_times = plot_false_discovery_rate(eeg_epochs, erp_times, target_erp,
 
 # perform the loop on relevant subjects
 subject_significance = multiple_subject_evaluation() # default conditions
-# Test to make sure the shape is what it is supposed to be 
-print("Shape of subject_significance:", subject_significance.shape)
+
 #%%
 # plot the number of subjects with significant sample time in a channel
 plot_subject_significance(erp_times, subject_significance)
